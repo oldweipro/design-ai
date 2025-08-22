@@ -1,0 +1,74 @@
+{{define "pages/about"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>{{.Title}} - DesignAI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #4c1d95;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        p {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{.Title}}</h1>
+        <p>DesignAI 是一个AI驱动的设计作品展示平台，致力于连接全球创意设计师，探索无限设计可能。</p>
+        <p>我们相信AI技术能够激发人类的创造力，而不是取代它。通过智能算法的辅助，设计师可以更快地实现他们的创意构想，同时探索从未想象过的设计可能性。</p>
+        <p>在这里，您可以：</p>
+        <ul>
+            <li>🎨 浏览最新的AI辅助设计作品</li>
+            <li>🤖 使用AI工具提升设计效率</li>
+            <li>🌟 分享您的创意作品</li>
+            <li>💡 获得设计灵感和趋势洞察</li>
+        </ul>
+        <a href="/" class="back-link">返回首页</a>
+    </div>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,1961 @@
+{{define "pages/home"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>{{.Title}} - DesignAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Light theme */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-accent: rgba(0, 0, 0, 0.02);
+            --text-primary: #1a202c;
+            --text-secondary: #718096;
+            --text-accent: #4299e1;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-medium: rgba(0, 0, 0, 0.1);
+            --shadow-heavy: rgba(0, 0, 0, 0.2);
+            --ai-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme */
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-accent: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-accent: #63b3ed;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-light: rgba(0, 0, 0, 0.3);
+            --shadow-medium: rgba(0, 0, 0, 0.5);
+            --shadow-heavy: rgba(0, 0, 0, 0.7);
+            --ai-gradient: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+            --card-bg: rgba(26, 26, 46, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 动态背景 */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--bg-primary);
+        }
+
+        .bg-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--ai-gradient);
+            opacity: 0.03;
+            animation: backgroundPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { opacity: 0.03; transform: scale(1); }
+            50% { opacity: 0.08; transform: scale(1.05); }
+        }
+
+        /* AI粒子效果 */
+        .ai-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--text-accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 15s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) scale(0);
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(90vh) scale(1);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(10vh) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(0) scale(0);
+            }
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .ai-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--ai-gradient);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes logoGlow {
+            0%, 100% { box-shadow: 0 0 0 rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.6); }
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .upload-btn {
+            background: var(--ai-gradient);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .upload-btn:hover::before {
+            left: 100%;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-medium);
+        }
+
+        /* 主要内容区域 */
+        .main-container {
+            margin-top: 100px;
+            padding: 2rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 中央搜索区域 */
+        .search-hero {
+            text-align: center;
+            padding: 4rem 0 6rem;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: var(--ai-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease 0.3s both;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            animation: fadeInUp 1s ease 0.6s both;
+        }
+
+        .search-wrapper {
+            position: relative;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px var(--shadow-light);
+            backdrop-filter: blur(20px);
+        }
+
+        .search-wrapper:focus-within {
+            border-color: var(--text-accent);
+            box-shadow: 0 15px 50px var(--shadow-medium);
+            transform: translateY(-5px);
+        }
+
+        .main-search {
+            width: 100%;
+            padding: 1rem 1.5rem 1rem 4rem;
+            border: none;
+            border-radius: 50px;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .main-search::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            animation: searchPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes searchPulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.1); }
+        }
+
+        .ai-suggestions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease 0.9s both;
+        }
+
+        .suggestion-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .suggestion-chip:hover {
+            transform: translateY(-2px);
+            background: var(--ai-gradient);
+            color: white;
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        /* 过滤器区域 */
+        .filter-section {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease 1.2s both;
+        }
+
+        .filter-btn {
+            padding: 0.8rem 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--ai-gradient);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .filter-btn:hover::before,
+        .filter-btn.active::before {
+            left: 0;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        /* 作品网格 */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .portfolio-item {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            transition: all 0.4s ease;
+            cursor: pointer;
+            animation: fadeInScale 0.8s ease;
+            position: relative;
+        }
+
+        .portfolio-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--ai-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .portfolio-item:hover::before {
+            opacity: 0.1;
+        }
+
+        .portfolio-item:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px var(--shadow-medium);
+        }
+
+        .portfolio-image {
+            width: 100%;
+            height: 250px;
+            background: var(--ai-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portfolio-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1));
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .portfolio-item:hover .portfolio-image::after {
+            transform: translateX(100%);
+        }
+
+        .ai-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            animation: badgePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .portfolio-content {
+            padding: 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .portfolio-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .portfolio-author {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .portfolio-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--bg-accent);
+            color: var(--text-secondary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            background: var(--text-accent);
+            color: white;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--text-accent);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-accent);
+        }
+
+        .file-upload:hover {
+            border-color: var(--text-accent);
+            color: var(--text-accent);
+            background: rgba(66, 153, 225, 0.05);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--ai-gradient);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+        }
+
+        /* AI加载动画 */
+        .ai-loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 0.3rem;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-accent);
+            border-radius: 50%;
+            animation: loadingDot 1.4s ease-in-out infinite both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDot {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* 动画类 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .search-container {
+                padding: 0 1rem;
+            }
+
+            .filter-section {
+                justify-content: center;
+                padding: 0 1rem;
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        /* 页脚样式 */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+            position: relative;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem 1rem;
+        }
+
+        .footer-top {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section {
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .footer-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+            background: var(--ai-gradient);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .social-link:hover span {
+            filter: grayscale(0);
+        }
+
+        .footer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .footer-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 30px;
+            height: 2px;
+            background: var(--ai-gradient);
+            border-radius: 1px;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .footer-link:hover {
+            color: var(--text-accent);
+            transform: translateX(5px);
+        }
+
+        .contact-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .contact-icon {
+            font-size: 1rem;
+        }
+
+        .newsletter {
+            margin-top: 1rem;
+        }
+
+        .newsletter-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.8rem;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            border-color: var(--text-accent);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .newsletter-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .newsletter-btn {
+            background: var(--ai-gradient);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .newsletter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .footer-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 2rem 0 1.5rem;
+            opacity: 0.5;
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .footer-bottom-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-bottom-left p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .legal-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .legal-link:hover {
+            color: var(--text-accent);
+        }
+
+        .footer-bottom-right {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .language-icon {
+            font-size: 1rem;
+        }
+
+        .language-select {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem 0.8rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .language-select:focus {
+            outline: none;
+            border-color: var(--text-accent);
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
+        /* 回到顶部按钮 */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--ai-gradient);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--shadow-medium);
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px var(--shadow-heavy);
+        }
+
+        .back-to-top span {
+            font-size: 1.2rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-3px);
+            }
+            60% {
+                transform: translateY(-2px);
+            }
+        }
+
+        /* 响应式页脚 */
+        @media (max-width: 1024px) {
+            .footer-top {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                padding: 2rem 1rem 1rem;
+            }
+
+            .footer-top {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+                gap: 1.5rem;
+            }
+
+            .footer-bottom-left {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .footer-legal {
+                justify-content: center;
+            }
+
+            .newsletter-form {
+                flex-direction: column;
+            }
+
+            .newsletter-btn {
+                width: 100%;
+            }
+
+            .back-to-top {
+                bottom: 1rem;
+                right: 1rem;
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 动态背景 -->
+<div class="animated-background">
+    <div class="bg-animation"></div>
+</div>
+
+<!-- AI粒子效果 -->
+<div class="ai-particles" id="particleContainer"></div>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="logo" href="#">
+            <div class="ai-icon">AI</div>
+            DesignAI
+        </a>
+        <div class="nav-actions">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+            </button>
+            <button class="upload-btn" onclick="openUploadModal()">上传作品</button>
+        </div>
+    </div>
+</nav>
+
+<!-- 主要内容 -->
+<div class="main-container">
+    <!-- 中央搜索英雄区域 -->
+    <div class="search-hero">
+        <h1 class="hero-title">AI驱动的设计灵感</h1>
+        <p class="hero-subtitle">探索无限创意，发现下一个设计趋势</p>
+
+        <div class="search-container">
+            <div class="search-wrapper">
+                <div class="search-icon">🔍</div>
+                <input class="main-search" id="mainSearch" placeholder="搜索设计作品、风格或创意灵感..." type="text">
+            </div>
+        </div>
+
+        <div class="ai-suggestions">
+            <div class="suggestion-chip" onclick="searchByTerm('AI生成')">AI生成</div>
+            <div class="suggestion-chip" onclick="searchByTerm('3D设计')">3D设计</div>
+            <div class="suggestion-chip" onclick="searchByTerm('极简主义')">极简主义</div>
+            <div class="suggestion-chip" onclick="searchByTerm('未来科技')">未来科技</div>
+            <div class="suggestion-chip" onclick="searchByTerm('品牌识别')">品牌识别</div>
+        </div>
+    </div>
+
+    <!-- 过滤器 -->
+    <div class="filter-section">
+        <button class="filter-btn active" data-filter="all">全部作品</button>
+        <button class="filter-btn" data-filter="ai">AI生成</button>
+        <button class="filter-btn" data-filter="ui">UI/UX</button>
+        <button class="filter-btn" data-filter="web">网页设计</button>
+        <button class="filter-btn" data-filter="mobile">移动应用</button>
+        <button class="filter-btn" data-filter="brand">品牌设计</button>
+        <button class="filter-btn" data-filter="3d">3D渲染</button>
+    </div>
+
+    <!-- AI加载动画 -->
+    <div class="ai-loading" id="aiLoading">
+        <p>AI正在为您推荐最佳作品...</p>
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+
+    <!-- 作品网格 -->
+    <div class="portfolio-grid" id="portfolioGrid">
+        <!-- 作品将通过JavaScript动态生成 -->
+    </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-content">
+        <!-- 页脚顶部 -->
+        <div class="footer-top">
+            <div class="footer-section">
+                <div class="footer-logo">
+                    <div class="ai-icon">AI</div>
+                    <span>DesignAI</span>
+                </div>
+                <p class="footer-description">
+                    AI驱动的设计作品展示平台，连接全球创意设计师，探索无限设计可能。
+                </p>
+                <div class="social-links">
+                    <a class="social-link" href="#">
+                        <span>📱</span>
+                    </a>
+                    <a class="social-link" href="#">
+                        <span>🐦</span>
+                    </a>
+                    <a class="social-link" href="#">
+                        <span>📧</span>
+                    </a>
+                    <a class="social-link" href="#">
+                        <span>🌐</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="footer-title">发现设计</h3>
+                <ul class="footer-links">
+                    <li><a class="footer-link" href="#">热门作品</a></li>
+                    <li><a class="footer-link" href="#">最新上传</a></li>
+                    <li><a class="footer-link" href="#">AI生成作品</a></li>
+                    <li><a class="footer-link" href="#">设计师推荐</a></li>
+                    <li><a class="footer-link" href="#">设计趋势</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="footer-title">设计分类</h3>
+                <ul class="footer-links">
+                    <li><a class="footer-link" href="#">UI/UX设计</a></li>
+                    <li><a class="footer-link" href="#">网页设计</a></li>
+                    <li><a class="footer-link" href="#">移动应用</a></li>
+                    <li><a class="footer-link" href="#">品牌设计</a></li>
+                    <li><a class="footer-link" href="#">3D渲染</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="footer-title">AI工具</h3>
+                <ul class="footer-links">
+                    <li><a class="footer-link" href="#">AI设计助手</a></li>
+                    <li><a class="footer-link" href="#">智能配色</a></li>
+                    <li><a class="footer-link" href="#">风格迁移</a></li>
+                    <li><a class="footer-link" href="#">自动布局</a></li>
+                    <li><a class="footer-link" href="#">设计优化</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="footer-title">社区</h3>
+                <ul class="footer-links">
+                    <li><a class="footer-link" href="#">设计师社区</a></li>
+                    <li><a class="footer-link" href="#">设计挑战</a></li>
+                    <li><a class="footer-link" href="#">学习资源</a></li>
+                    <li><a class="footer-link" href="#">设计博客</a></li>
+                    <li><a class="footer-link" href="#">帮助中心</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="footer-title">联系我们</h3>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="contact-icon">📧</span>
+                        <span>hello@designai.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">💬</span>
+                        <span>在线客服</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">📞</span>
+                        <span>400-888-0001</span>
+                    </div>
+                </div>
+                <div class="newsletter">
+                    <h4 class="newsletter-title">订阅更新</h4>
+                    <div class="newsletter-form">
+                        <input class="newsletter-input" placeholder="输入您的邮箱" type="email">
+                        <button class="newsletter-btn">订阅</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚分割线 -->
+        <div class="footer-divider"></div>
+
+        <!-- 页脚底部 -->
+        <div class="footer-bottom">
+            <div class="footer-bottom-left">
+                <p>&copy; 2025 DesignAI. 保留所有权利</p>
+                <div class="footer-legal">
+                    <a class="legal-link" href="#">隐私政策</a>
+                    <a class="legal-link" href="#">服务条款</a>
+                    <a class="legal-link" href="#">Cookie政策</a>
+                </div>
+            </div>
+            <div class="footer-bottom-right">
+                <div class="language-selector">
+                    <span class="language-icon">🌐</span>
+                    <select class="language-select">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+                <div class="footer-stats">
+                        <span class="stat-item">
+                            <span class="stat-number">50K+</span>
+                            <span class="stat-label">设计师</span>
+                        </span>
+                    <span class="stat-item">
+                            <span class="stat-number">1M+</span>
+                            <span class="stat-label">作品</span>
+                        </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()">
+        <span>⬆️</span>
+    </button>
+</footer>
+
+<!-- 上传模态框 -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+        <h2 class="modal-title">🚀 上传您的设计作品</h2>
+        <form id="uploadForm">
+            <div class="form-group">
+                <label class="form-label">作品标题</label>
+                <input class="form-input" placeholder="输入作品标题..." required type="text">
+            </div>
+            <div class="form-group">
+                <label class="form-label">设计师名称</label>
+                <input class="form-input" placeholder="输入您的名称..." required type="text">
+            </div>
+            <div class="form-group">
+                <label class="form-label">作品描述</label>
+                <input class="form-input" placeholder="描述您的设计理念..." required type="text">
+            </div>
+            <div class="form-group">
+                <label class="form-label">AI辅助程度</label>
+                <select class="form-input" required>
+                    <option value="">选择AI参与程度</option>
+                    <option value="no-ai">完全手工设计</option>
+                    <option value="ai-assisted">AI辅助设计</option>
+                    <option value="ai-generated">AI完全生成</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">作品标签</label>
+                <input class="form-input" placeholder="AI设计,未来科技,3D渲染..." required type="text">
+            </div>
+            <div class="form-group">
+                <label class="form-label">上传图片</label>
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                    <input accept="image/*" id="fileInput" style="display: none;" type="file">
+                    📁 点击选择图片文件或拖拽到此处
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" type="submit">🚀 发布作品</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 详情模态框 -->
+<div class="modal" id="detailModal">
+    <div class="modal-content detail-modal-content">
+        <button class="close-btn" onclick="closeDetailModal()">&times;</button>
+        <div id="detailContent">
+            <!-- 详情内容将通过JavaScript填充 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // 示例作品数据
+    const portfolioData = [
+        {
+            id: 1,
+            title: "AI生成的未来城市界面",
+            author: "张AI设计师",
+            authorInitial: "张",
+            description: "使用最新AI技术生成的未来科技感城市管理界面，融合了机器学习和人机交互的前沿理念。",
+            tags: ["AI生成", "未来科技", "UI设计", "3D渲染"],
+            category: "ai",
+            image: "🏙️ AI未来城市",
+            aiLevel: "AI完全生成",
+            likes: 234,
+            views: 1250
+        },
+        {
+            id: 2,
+            title: "智能健康监测APP",
+            author: "李UX专家",
+            authorInitial: "李",
+            description: "结合AI算法的智能健康监测应用，提供个性化的健康建议和数据可视化。",
+            tags: ["AI辅助", "健康", "移动应用", "数据可视化"],
+            category: "mobile",
+            image: "📱 智能健康APP",
+            aiLevel: "AI辅助设计",
+            likes: 189,
+            views: 890
+        },
+        {
+            id: 3,
+            title: "3D全息投影界面概念",
+            author: "王3D设计师",
+            authorInitial: "王",
+            description: "探索未来交互方式的3D全息投影界面设计，重新定义人机交互体验。",
+            tags: ["3D设计", "全息投影", "未来交互", "概念设计"],
+            category: "3d",
+            image: "🌐 3D全息界面",
+            aiLevel: "AI辅助设计",
+            likes: 312,
+            views: 1560
+        },
+        {
+            id: 4,
+            title: "AI品牌视觉识别系统",
+            author: "陈品牌专家",
+            authorInitial: "陈",
+            description: "运用AI工具打造的完整品牌视觉识别系统，包含logo、配色、字体等全套设计。",
+            tags: ["品牌设计", "AI工具", "视觉识别", "logo设计"],
+            category: "brand",
+            image: "🎨 AI品牌设计",
+            aiLevel: "AI辅助设计",
+            likes: 156,
+            views: 720
+        },
+        {
+            id: 5,
+            title: "神经网络数据可视化",
+            author: "赵数据科学家",
+            authorInitial: "赵",
+            description: "将复杂的神经网络结构转化为直观的可视化界面，让AI变得更易理解。",
+            tags: ["数据可视化", "神经网络", "AI教育", "交互设计"],
+            category: "ui",
+            image: "🧠 神经网络可视化",
+            aiLevel: "AI辅助设计",
+            likes: 278,
+            views: 1100
+        },
+        {
+            id: 6,
+            title: "智能家居控制中心",
+            author: "孙IoT设计师",
+            authorInitial: "孙",
+            description: "集成AI语音助手的智能家居控制界面，提供直观的智能设备管理体验。",
+            tags: ["智能家居", "IoT", "语音交互", "控制界面"],
+            category: "ui",
+            image: "🏠 智能家居中心",
+            aiLevel: "AI辅助设计",
+            likes: 201,
+            views: 950
+        },
+        {
+            id: 7,
+            title: "AI艺术生成平台",
+            author: "周艺术家",
+            authorInitial: "周",
+            description: "专为艺术创作者设计的AI艺术生成平台，让人工智能成为创意的伙伴。",
+            tags: ["AI艺术", "创意平台", "艺术生成", "创作工具"],
+            category: "web",
+            image: "🎭 AI艺术平台",
+            aiLevel: "AI生成",
+            likes: 445,
+            views: 2100
+        },
+        {
+            id: 8,
+            title: "量子计算可视化界面",
+            author: "吴量子研究员",
+            authorInitial: "吴",
+            description: "将抽象的量子计算概念转化为可视化界面，展示量子比特的状态和运算过程。",
+            tags: ["量子计算", "科学可视化", "前沿科技", "教育界面"],
+            category: "ui",
+            image: "⚛️ 量子计算界面",
+            aiLevel: "AI辅助设计",
+            likes: 167,
+            views: 680
+        }
+    ];
+
+    let currentPortfolio = [...portfolioData];
+    let currentTheme = 'light';
+
+    // 初始化粒子效果
+    function initParticles() {
+        const container = document.getElementById('particleContainer');
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            container.appendChild(particle);
+
+            // 移除粒子避免内存泄漏
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 25000);
+        }
+
+        // 创建初始粒子
+        for (let i = 0; i < 20; i++) {
+            setTimeout(createParticle, i * 1000);
+        }
+
+        // 持续创建新粒子
+        setInterval(createParticle, 2000);
+    }
+
+    // 主题切换
+    function toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+
+        if (currentTheme === 'light') {
+            body.setAttribute('data-theme', 'dark');
+            themeIcon.textContent = '☀️';
+            currentTheme = 'dark';
+        } else {
+            body.removeAttribute('data-theme');
+            themeIcon.textContent = '🌙';
+            currentTheme = 'light';
+        }
+
+        // 添加主题切换动画
+        body.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+            body.style.transition = '';
+        }, 300);
+    }
+
+    // 渲染作品网格
+    function renderPortfolio(data = currentPortfolio) {
+        const grid = document.getElementById('portfolioGrid');
+        const loading = document.getElementById('aiLoading');
+
+        // 显示加载动画
+        loading.style.display = 'block';
+        grid.style.opacity = '0';
+
+        setTimeout(() => {
+            grid.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const portfolioItem = document.createElement('div');
+                portfolioItem.className = 'portfolio-item';
+                portfolioItem.style.animationDelay = `${index * 0.1}s`;
+                portfolioItem.onclick = () => showDetail(item);
+
+                portfolioItem.innerHTML = `
+                        <div class="portfolio-image">
+                            ${item.image}
+                            <div class="ai-badge">
+                                ${item.aiLevel === 'AI完全生成' ? '🤖 AI生成' :
+                    item.aiLevel === 'AI辅助设计' ? '🧠 AI辅助' : '✋ 手工设计'}
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="portfolio-title">${item.title}</h3>
+                            <div class="portfolio-author">
+                                <div class="author-avatar">${item.authorInitial}</div>
+                                <span>by ${item.author}</span>
+                            </div>
+                            <div class="portfolio-stats" style="display: flex; gap: 1rem; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                                <span>👁️ ${item.views}</span>
+                                <span>❤️ ${item.likes}</span>
+                            </div>
+                            <div class="portfolio-tags">
+                                ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                grid.appendChild(portfolioItem);
+            });
+
+            // 隐藏加载动画，显示内容
+            loading.style.display = 'none';
+            grid.style.opacity = '1';
+        }, 1000);
+    }
+
+    // 搜索功能
+    function searchByTerm(term) {
+        const searchInput = document.getElementById('mainSearch');
+        searchInput.value = term;
+        performSearch(term);
+    }
+
+    function performSearch(searchTerm) {
+        const filtered = portfolioData.filter(item =>
+            item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        renderPortfolio(filtered);
+    }
+
+    // 过滤功能
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const filter = this.getAttribute('data-filter');
+            if (filter === 'all') {
+                renderPortfolio(portfolioData);
+            } else {
+                const filtered = portfolioData.filter(item => item.category === filter);
+                renderPortfolio(filtered);
+            }
+        });
+    });
+
+    // 搜索输入事件
+    document.getElementById('mainSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value;
+        if (searchTerm.length >= 2) {
+            performSearch(searchTerm);
+        } else if (searchTerm.length === 0) {
+            renderPortfolio(portfolioData);
+        }
+    });
+
+    // 上传模态框
+    function openUploadModal() {
+        document.getElementById('uploadModal').style.display = 'block';
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadModal').style.display = 'none';
+    }
+
+    // 详情模态框
+    function showDetail(item) {
+        const detailContent = document.getElementById('detailContent');
+        detailContent.innerHTML = `
+                <div class="detail-image" style="background: var(--ai-gradient); border-radius: 15px; margin-bottom: 2rem; height: 300px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                    ${item.image}
+                </div>
+                <div class="detail-info" style="color: var(--text-primary);">
+                    <h2 class="detail-title" style="font-size: 2rem; margin-bottom: 1rem;">${item.title}</h2>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; color: var(--text-secondary);">
+                        <div class="author-avatar" style="width: 40px; height: 40px; font-size: 1rem;">${item.authorInitial}</div>
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">${item.author}</div>
+                            <div style="font-size: 0.9rem;">${item.aiLevel}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+                        <span>👁️ ${item.views} 浏览</span>
+                        <span>❤️ ${item.likes} 喜欢</span>
+                    </div>
+                    <p class="detail-description" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">${item.description}</p>
+                    <div class="portfolio-tags">
+                        ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" style="background: var(--ai-gradient);">💖 点赞</button>
+                        <button class="btn btn-secondary">📥 下载</button>
+                        <button class="btn btn-secondary">📤 分享</button>
+                    </div>
+                </div>
+            `;
+        document.getElementById('detailModal').style.display = 'block';
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // 上传表单处理
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const title = this.querySelector('input[placeholder="输入作品标题..."]').value;
+        const author = this.querySelector('input[placeholder="输入您的名称..."]').value;
+        const description = this.querySelector('input[placeholder="描述您的设计理念..."]').value;
+        const aiLevel = this.querySelector('select').value;
+        const tags = this.querySelector('input[placeholder="AI设计,未来科技,3D渲染..."]').value.split(',').map(tag => tag.trim());
+
+        // 创建新作品对象
+        const newWork = {
+            id: portfolioData.length + 1,
+            title,
+            author,
+            authorInitial: author.charAt(0),
+            description,
+            tags,
+            category: 'ai',
+            image: `🎨 ${title}`,
+            aiLevel: aiLevel === 'no-ai' ? '手工设计' :
+                aiLevel === 'ai-assisted' ? 'AI辅助设计' : 'AI完全生成',
+            likes: Math.floor(Math.random() * 100),
+            views: Math.floor(Math.random() * 1000)
+        };
+
+        // 添加到作品列表
+        portfolioData.unshift(newWork);
+        renderPortfolio();
+
+        // 关闭模态框并重置表单
+        closeUploadModal();
+        this.reset();
+
+        // 显示成功消息
+        showSuccessMessage('🎉 作品上传成功！AI正在为您的作品生成标签...');
+    });
+
+    // 成功消息提示
+    function showSuccessMessage(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 2rem;
+                background: var(--ai-gradient);
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px var(--shadow-medium);
+                z-index: 3000;
+                animation: slideInRight 0.3s ease;
+                backdrop-filter: blur(10px);
+            `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    // 点击模态框外部关闭
+    window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    });
+
+    // 文件上传处理
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.querySelector('.file-upload').innerHTML = `✅ 已选择文件: ${file.name}`;
+        }
+    });
+
+    // 导航栏滚动效果
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.style.background = 'var(--glass-bg)';
+            navbar.style.boxShadow = '0 5px 20px var(--shadow-light)';
+        } else {
+            navbar.style.background = 'var(--glass-bg)';
+            navbar.style.boxShadow = 'none';
+        }
+    });
+
+    // 添加CSS动画
+    const style = document.createElement('style');
+    style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+    document.head.appendChild(style);
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+        initParticles();
+        renderPortfolio();
+        initBackToTop();
+
+        // 添加键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K 聚焦搜索
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('mainSearch').focus();
+            }
+            // ESC 关闭模态框
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    if (modal.style.display === 'block') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+    });
+
+    // 回到顶部功能
+    function initBackToTop() {
+        const backToTopBtn = document.getElementById('backToTop');
+
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        });
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // 订阅newsletter功能
+    document.querySelector('.newsletter-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = this.querySelector('.newsletter-input').value;
+        if (email) {
+            showSuccessMessage('📧 订阅成功！您将收到最新的设计趋势和作品推荐。');
+            this.querySelector('.newsletter-input').value = '';
+        }
+    });
+
+    // 为newsletter按钮添加点击事件
+    document.querySelector('.newsletter-btn').addEventListener('click', function() {
+        const form = this.parentElement;
+        const email = form.querySelector('.newsletter-input').value;
+        if (email) {
+            showSuccessMessage('📧 订阅成功！您将收到最新的设计趋势和作品推荐。');
+            form.querySelector('.newsletter-input').value = '';
+        } else {
+            showSuccessMessage('⚠️ 请输入有效的邮箱地址');
+        }
+    });
+
+    // AI推荐功能模拟
+    function aiRecommend() {
+        const loading = document.getElementById('aiLoading');
+        loading.style.display = 'block';
+
+        setTimeout(() => {
+            // 随机推荐一些作品
+            const shuffled = [...portfolioData].sort(() => 0.5 - Math.random());
+            const recommended = shuffled.slice(0, 4);
+            renderPortfolio(recommended);
+        }, 2000);
+    }
+
+    // 添加AI推荐按钮（可选）
+    const aiRecommendBtn = document.createElement('button');
+    aiRecommendBtn.textContent = '🤖 AI推荐';
+    aiRecommendBtn.className = 'suggestion-chip';
+    aiRecommendBtn.onclick = aiRecommend;
+    document.querySelector('.ai-suggestions').appendChild(aiRecommendBtn);
+</script>
+</body>
+</html>
+{{end}}
