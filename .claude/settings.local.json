@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go run:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(go get:*)",
+      "Bash(go mod edit:*)",
+      "Bash(go mod:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout:*)",
+      "Bash(del design_ai.db)",
+      "Bash(rm:*)",
+      "Bash(taskkill:*)"
+    ],
+    "deny": []
+  }
+}

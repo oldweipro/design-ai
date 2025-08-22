@@ -180,6 +180,112 @@
             gap: 1rem;
         }
 
+        .user-menu {
+            position: relative;
+            display: none;
+        }
+
+        .user-menu.show {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow-medium);
+            padding: 0.5rem;
+            min-width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-accent);
+            transform: translateX(5px);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.5rem 0;
+        }
+
+        .auth-buttons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .auth-buttons.hide {
+            display: none;
+        }
+
+        .login-btn {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-btn:hover {
+            background: var(--bg-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
         .theme-toggle {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -1208,7 +1314,36 @@
             <button class="theme-toggle" onclick="toggleTheme()">
                 <span id="themeIcon">🌙</span>
             </button>
-            <button class="upload-btn" onclick="openUploadModal()">上传作品</button>
+            
+            <!-- 未登录时显示的按钮 -->
+            <div class="auth-buttons" id="authButtons">
+                <a href="/auth" class="login-btn">登录</a>
+                <button class="upload-btn" onclick="openUploadModal()">上传作品</button>
+            </div>
+            
+            <!-- 已登录时显示的用户菜单 -->
+            <div class="user-menu" id="userMenu">
+                <div class="user-avatar" id="userAvatar" onclick="toggleUserDropdown()"></div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/dashboard" class="dropdown-item">
+                        <span>📊</span>
+                        <span>仪表板</span>
+                    </a>
+                    <a href="/dashboard#my-portfolios" class="dropdown-item">
+                        <span>🎨</span>
+                        <span>我的作品</span>
+                    </a>
+                    <a href="/dashboard#profile" class="dropdown-item">
+                        <span>👤</span>
+                        <span>个人资料</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" onclick="logout()">
+                        <span>🚪</span>
+                        <span>退出登录</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </nav>
@@ -1461,116 +1596,235 @@
 </div>
 
 <script>
-    // 示例作品数据
-    const portfolioData = [
-        {
-            id: 1,
-            title: "AI生成的未来城市界面",
-            author: "张AI设计师",
-            authorInitial: "张",
-            description: "使用最新AI技术生成的未来科技感城市管理界面，融合了机器学习和人机交互的前沿理念。",
-            tags: ["AI生成", "未来科技", "UI设计", "3D渲染"],
-            category: "ai",
-            image: "🏙️ AI未来城市",
-            aiLevel: "AI完全生成",
-            likes: 234,
-            views: 1250
-        },
-        {
-            id: 2,
-            title: "智能健康监测APP",
-            author: "李UX专家",
-            authorInitial: "李",
-            description: "结合AI算法的智能健康监测应用，提供个性化的健康建议和数据可视化。",
-            tags: ["AI辅助", "健康", "移动应用", "数据可视化"],
-            category: "mobile",
-            image: "📱 智能健康APP",
-            aiLevel: "AI辅助设计",
-            likes: 189,
-            views: 890
-        },
-        {
-            id: 3,
-            title: "3D全息投影界面概念",
-            author: "王3D设计师",
-            authorInitial: "王",
-            description: "探索未来交互方式的3D全息投影界面设计，重新定义人机交互体验。",
-            tags: ["3D设计", "全息投影", "未来交互", "概念设计"],
-            category: "3d",
-            image: "🌐 3D全息界面",
-            aiLevel: "AI辅助设计",
-            likes: 312,
-            views: 1560
-        },
-        {
-            id: 4,
-            title: "AI品牌视觉识别系统",
-            author: "陈品牌专家",
-            authorInitial: "陈",
-            description: "运用AI工具打造的完整品牌视觉识别系统，包含logo、配色、字体等全套设计。",
-            tags: ["品牌设计", "AI工具", "视觉识别", "logo设计"],
-            category: "brand",
-            image: "🎨 AI品牌设计",
-            aiLevel: "AI辅助设计",
-            likes: 156,
-            views: 720
-        },
-        {
-            id: 5,
-            title: "神经网络数据可视化",
-            author: "赵数据科学家",
-            authorInitial: "赵",
-            description: "将复杂的神经网络结构转化为直观的可视化界面，让AI变得更易理解。",
-            tags: ["数据可视化", "神经网络", "AI教育", "交互设计"],
-            category: "ui",
-            image: "🧠 神经网络可视化",
-            aiLevel: "AI辅助设计",
-            likes: 278,
-            views: 1100
-        },
-        {
-            id: 6,
-            title: "智能家居控制中心",
-            author: "孙IoT设计师",
-            authorInitial: "孙",
-            description: "集成AI语音助手的智能家居控制界面，提供直观的智能设备管理体验。",
-            tags: ["智能家居", "IoT", "语音交互", "控制界面"],
-            category: "ui",
-            image: "🏠 智能家居中心",
-            aiLevel: "AI辅助设计",
-            likes: 201,
-            views: 950
-        },
-        {
-            id: 7,
-            title: "AI艺术生成平台",
-            author: "周艺术家",
-            authorInitial: "周",
-            description: "专为艺术创作者设计的AI艺术生成平台，让人工智能成为创意的伙伴。",
-            tags: ["AI艺术", "创意平台", "艺术生成", "创作工具"],
-            category: "web",
-            image: "🎭 AI艺术平台",
-            aiLevel: "AI生成",
-            likes: 445,
-            views: 2100
-        },
-        {
-            id: 8,
-            title: "量子计算可视化界面",
-            author: "吴量子研究员",
-            authorInitial: "吴",
-            description: "将抽象的量子计算概念转化为可视化界面，展示量子比特的状态和运算过程。",
-            tags: ["量子计算", "科学可视化", "前沿科技", "教育界面"],
-            category: "ui",
-            image: "⚛️ 量子计算界面",
-            aiLevel: "AI辅助设计",
-            likes: 167,
-            views: 680
-        }
-    ];
-
-    let currentPortfolio = [...portfolioData];
+    // API基础URL
+    const API_BASE_URL = '/api/v1';
+    
+    // 全局变量
+    let portfolioData = [];
+    let currentPortfolio = [];
     let currentTheme = 'light';
+    let currentFilter = 'all';
+    let currentSearchTerm = '';
+    let currentUser = null;
+
+    // 获取认证token
+    function getAuthToken() {
+        return localStorage.getItem('authToken');
+    }
+
+    // 获取认证请求头
+    function getAuthHeaders() {
+        const token = getAuthToken();
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+    }
+
+    // API请求封装
+    async function apiRequest(url, options = {}) {
+        try {
+            const response = await fetch(API_BASE_URL + url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+
+    // 检查用户认证状态
+    function checkAuthStatus() {
+        const token = getAuthToken();
+        const userStr = localStorage.getItem('user');
+        
+        if (token && userStr) {
+            try {
+                currentUser = JSON.parse(userStr);
+                showUserMenu();
+                return true;
+            } catch (error) {
+                console.error('Failed to parse user data:', error);
+                clearAuthData();
+            }
+        }
+        
+        showAuthButtons();
+        return false;
+    }
+
+    // 显示用户菜单
+    function showUserMenu() {
+        document.getElementById('authButtons').classList.add('hide');
+        document.getElementById('userMenu').classList.add('show');
+        
+        if (currentUser) {
+            document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+        }
+    }
+
+    // 显示认证按钮
+    function showAuthButtons() {
+        document.getElementById('authButtons').classList.remove('hide');
+        document.getElementById('userMenu').classList.remove('show');
+    }
+
+    // 清除认证数据
+    function clearAuthData() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        currentUser = null;
+    }
+
+    // 切换用户下拉菜单
+    function toggleUserDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        dropdown.classList.toggle('show');
+    }
+
+    // 退出登录
+    function logout() {
+        clearAuthData();
+        showAuthButtons();
+        showSuccessMessage('已退出登录');
+        
+        // 刷新页面数据
+        fetchPortfolios({ category: currentFilter, search: currentSearchTerm });
+        renderPortfolio();
+    }
+
+    // 提示登录
+    function promptLogin() {
+        showErrorMessage('请先登录后再进行此操作');
+        setTimeout(() => {
+            window.location.href = '/auth';
+        }, 2000);
+    }
+
+    // 编辑作品
+    function editPortfolio(portfolioId) {
+        if (!currentUser) {
+            promptLogin();
+            return;
+        }
+        
+        showSuccessMessage('正在跳转到编辑页面...');
+        // 跳转到仪表板的编辑页面
+        window.location.href = `/dashboard#edit-portfolio-${portfolioId}`;
+    }
+
+    // 删除作品
+    async function deletePortfolio(portfolioId) {
+        if (!currentUser) {
+            promptLogin();
+            return;
+        }
+
+        if (!confirm('确定要删除这个作品吗？此操作不可撤销。')) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/portfolios/${portfolioId}`, {
+                method: 'DELETE'
+            });
+
+            showSuccessMessage('作品删除成功');
+            
+            // 重新加载作品列表
+            await fetchPortfolios({ category: currentFilter, search: currentSearchTerm });
+            renderPortfolio();
+
+        } catch (error) {
+            console.error('Failed to delete portfolio:', error);
+            showErrorMessage('删除作品失败：' + error.message);
+        }
+    }
+
+    // 获取作品列表
+    async function fetchPortfolios(filters = {}) {
+        try {
+            const params = new URLSearchParams();
+            
+            if (filters.category && filters.category !== 'all') {
+                params.append('category', filters.category);
+            }
+            if (filters.search) {
+                params.append('search', filters.search);
+            }
+            if (filters.page) {
+                params.append('page', filters.page);
+            }
+            if (filters.page_size) {
+                params.append('page_size', filters.page_size);
+            }
+            
+            const url = `/portfolios${params.toString() ? '?' + params.toString() : ''}`;
+            const result = await apiRequest(url);
+            
+            portfolioData = result.data || [];
+            currentPortfolio = [...portfolioData];
+            
+            return result;
+        } catch (error) {
+            console.error('Failed to fetch portfolios:', error);
+            showErrorMessage('加载作品失败，请稍后重试');
+            return { data: [], total: 0 };
+        }
+    }
+
+    // 点赞作品
+    async function likePortfolio(id) {
+        try {
+            const result = await apiRequest(`/portfolios/${id}/like`, {
+                method: 'POST'
+            });
+            
+            showSuccessMessage(`点赞成功！当前点赞数: ${result.likes}`);
+            
+            // 更新本地数据
+            const portfolio = portfolioData.find(p => p.id === id);
+            if (portfolio) {
+                portfolio.likes = result.likes;
+                renderPortfolio();
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Failed to like portfolio:', error);
+            showErrorMessage('点赞失败，请稍后重试');
+        }
+    }
+
+    // 创建新作品
+    async function createPortfolio(portfolioData) {
+        try {
+            const result = await apiRequest('/portfolios', {
+                method: 'POST',
+                body: JSON.stringify(portfolioData)
+            });
+            
+            showSuccessMessage('🎉 作品上传成功！');
+            
+            // 重新加载作品列表
+            await fetchPortfolios({ category: currentFilter, search: currentSearchTerm });
+            renderPortfolio();
+            
+            return result;
+        } catch (error) {
+            console.error('Failed to create portfolio:', error);
+            showErrorMessage('作品上传失败，请检查网络连接');
+            throw error;
+        }
+    }
 
     // 初始化粒子效果
     function initParticles() {
@@ -1635,33 +1889,54 @@
         setTimeout(() => {
             grid.innerHTML = '';
 
+            if (!data || data.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; color: var(--text-secondary); grid-column: 1 / -1; padding: 3rem;">暂无作品数据</div>';
+                loading.style.display = 'none';
+                grid.style.opacity = '1';
+                return;
+            }
+
             data.forEach((item, index) => {
                 const portfolioItem = document.createElement('div');
                 portfolioItem.className = 'portfolio-item';
                 portfolioItem.style.animationDelay = `${index * 0.1}s`;
                 portfolioItem.onclick = () => showDetail(item);
 
+                // 确保标签是数组
+                const tags = Array.isArray(item.tags) ? item.tags : [];
+
+                // 检查是否是当前用户的作品
+                const isOwnPortfolio = currentUser && item.user_id === currentUser.id;
+                const isAuthenticated = !!currentUser;
+
                 portfolioItem.innerHTML = `
                         <div class="portfolio-image">
-                            ${item.image}
+                            ${item.image || '🎨 ' + item.title}
                             <div class="ai-badge">
                                 ${item.aiLevel === 'AI完全生成' ? '🤖 AI生成' :
                     item.aiLevel === 'AI辅助设计' ? '🧠 AI辅助' : '✋ 手工设计'}
                             </div>
+                            ${isOwnPortfolio ? `<div class="owner-badge" style="position: absolute; top: 1rem; left: 1rem; background: var(--success-color); color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;">我的作品</div>` : ''}
                         </div>
                         <div class="portfolio-content">
                             <h3 class="portfolio-title">${item.title}</h3>
                             <div class="portfolio-author">
-                                <div class="author-avatar">${item.authorInitial}</div>
+                                <div class="author-avatar">${item.authorInitial || item.author.charAt(0)}</div>
                                 <span>by ${item.author}</span>
                             </div>
                             <div class="portfolio-stats" style="display: flex; gap: 1rem; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                                <span>👁️ ${item.views}</span>
-                                <span>❤️ ${item.likes}</span>
+                                <span>👁️ ${item.views || 0}</span>
+                                <span onclick="event.stopPropagation(); ${isAuthenticated ? `likePortfolio('${item.id}')` : 'promptLogin()'}" style="cursor: pointer;">❤️ ${item.likes || 0}</span>
                             </div>
                             <div class="portfolio-tags">
-                                ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
                             </div>
+                            ${isOwnPortfolio ? `
+                            <div class="portfolio-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                <button class="action-btn edit-btn" onclick="event.stopPropagation(); editPortfolio('${item.id}')" style="background: var(--info-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">✏️ 编辑</button>
+                                <button class="action-btn delete-btn" onclick="event.stopPropagation(); deletePortfolio('${item.id}')" style="background: var(--error-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">🗑️ 删除</button>
+                            </div>
+                            ` : ''}
                         </div>
                     `;
 
@@ -1671,54 +1946,78 @@
             // 隐藏加载动画，显示内容
             loading.style.display = 'none';
             grid.style.opacity = '1';
-        }, 1000);
+        }, 800);
     }
 
     // 搜索功能
-    function searchByTerm(term) {
+    async function searchByTerm(term) {
         const searchInput = document.getElementById('mainSearch');
         searchInput.value = term;
-        performSearch(term);
+        currentSearchTerm = term;
+        await performSearch(term);
     }
 
-    function performSearch(searchTerm) {
-        const filtered = portfolioData.filter(item =>
-            item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-        renderPortfolio(filtered);
+    async function performSearch(searchTerm) {
+        currentSearchTerm = searchTerm;
+        await fetchPortfolios({ 
+            category: currentFilter, 
+            search: searchTerm 
+        });
+        renderPortfolio();
     }
 
     // 过滤功能
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+    async function initFilterButtons() {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
 
-            const filter = this.getAttribute('data-filter');
-            if (filter === 'all') {
-                renderPortfolio(portfolioData);
-            } else {
-                const filtered = portfolioData.filter(item => item.category === filter);
-                renderPortfolio(filtered);
-            }
+                const filter = this.getAttribute('data-filter');
+                currentFilter = filter;
+                
+                await fetchPortfolios({ 
+                    category: filter, 
+                    search: currentSearchTerm 
+                });
+                renderPortfolio();
+            });
         });
-    });
+    }
 
     // 搜索输入事件
-    document.getElementById('mainSearch').addEventListener('input', function(e) {
-        const searchTerm = e.target.value;
-        if (searchTerm.length >= 2) {
-            performSearch(searchTerm);
-        } else if (searchTerm.length === 0) {
-            renderPortfolio(portfolioData);
-        }
-    });
+    function initSearchInput() {
+        const searchInput = document.getElementById('mainSearch');
+        let searchTimeout;
+
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value;
+            
+            // 防抖处理
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                if (searchTerm.length >= 2) {
+                    await performSearch(searchTerm);
+                } else if (searchTerm.length === 0) {
+                    currentSearchTerm = '';
+                    await fetchPortfolios({ category: currentFilter });
+                    renderPortfolio();
+                }
+            }, 500);
+        });
+    }
 
     // 上传模态框
     function openUploadModal() {
+        // 检查是否已登录
+        if (!checkAuthStatus()) {
+            showErrorMessage('请先登录后再上传作品');
+            setTimeout(() => {
+                window.location.href = '/auth';
+            }, 2000);
+            return;
+        }
+        
         document.getElementById('uploadModal').style.display = 'block';
     }
 
@@ -1729,31 +2028,44 @@
     // 详情模态框
     function showDetail(item) {
         const detailContent = document.getElementById('detailContent');
+        const tags = Array.isArray(item.tags) ? item.tags : [];
+        const isOwnPortfolio = currentUser && item.user_id === currentUser.id;
+        const isAuthenticated = !!currentUser;
+        
         detailContent.innerHTML = `
-                <div class="detail-image" style="background: var(--ai-gradient); border-radius: 15px; margin-bottom: 2rem; height: 300px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
-                    ${item.image}
+                <div class="detail-image" style="background: var(--ai-gradient); border-radius: 15px; margin-bottom: 2rem; height: 300px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; position: relative;">
+                    ${item.image || '🎨 ' + item.title}
+                    ${isOwnPortfolio ? `<div class="owner-badge" style="position: absolute; top: 1rem; left: 1rem; background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600;">我的作品</div>` : ''}
                 </div>
                 <div class="detail-info" style="color: var(--text-primary);">
                     <h2 class="detail-title" style="font-size: 2rem; margin-bottom: 1rem;">${item.title}</h2>
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; color: var(--text-secondary);">
-                        <div class="author-avatar" style="width: 40px; height: 40px; font-size: 1rem;">${item.authorInitial}</div>
+                        <div class="author-avatar" style="width: 40px; height: 40px; font-size: 1rem;">${item.authorInitial || item.author.charAt(0)}</div>
                         <div>
                             <div style="font-weight: 600; color: var(--text-primary);">${item.author}</div>
                             <div style="font-size: 0.9rem;">${item.aiLevel}</div>
                         </div>
                     </div>
                     <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
-                        <span>👁️ ${item.views} 浏览</span>
-                        <span>❤️ ${item.likes} 喜欢</span>
+                        <span>👁️ ${item.views || 0} 浏览</span>
+                        <span>❤️ ${item.likes || 0} 喜欢</span>
                     </div>
-                    <p class="detail-description" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">${item.description}</p>
+                    <p class="detail-description" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">${item.description || '暂无描述'}</p>
+                    ${item.content ? `<div class="detail-content" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-primary); background: var(--bg-accent); padding: 1.5rem; border-radius: 12px;"><h3 style="margin-bottom: 1rem;">详细介绍</h3><p>${item.content}</p></div>` : ''}
                     <div class="portfolio-tags">
-                        ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
                     </div>
-                    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                        <button class="btn btn-primary" style="background: var(--ai-gradient);">💖 点赞</button>
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                        ${isAuthenticated ? 
+                            `<button class="btn btn-primary" onclick="likePortfolio('${item.id}')" style="background: var(--ai-gradient);">💖 点赞</button>` :
+                            `<button class="btn btn-primary" onclick="promptLogin()" style="background: var(--ai-gradient);">💖 登录后点赞</button>`
+                        }
                         <button class="btn btn-secondary">📥 下载</button>
                         <button class="btn btn-secondary">📤 分享</button>
+                        ${isOwnPortfolio ? `
+                            <button class="btn btn-secondary" onclick="editPortfolio('${item.id}')" style="background: var(--info-color); color: white;">✏️ 编辑</button>
+                            <button class="btn btn-secondary" onclick="deletePortfolio('${item.id}')" style="background: var(--error-color); color: white;">🗑️ 删除</button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1765,51 +2077,90 @@
     }
 
     // 上传表单处理
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    function initUploadForm() {
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-        const title = this.querySelector('input[placeholder="输入作品标题..."]').value;
-        const author = this.querySelector('input[placeholder="输入您的名称..."]').value;
-        const description = this.querySelector('input[placeholder="描述您的设计理念..."]').value;
-        const aiLevel = this.querySelector('select').value;
-        const tags = this.querySelector('input[placeholder="AI设计,未来科技,3D渲染..."]').value.split(',').map(tag => tag.trim());
+            const title = this.querySelector('input[placeholder="输入作品标题..."]').value;
+            const author = this.querySelector('input[placeholder="输入您的名称..."]').value;
+            const description = this.querySelector('input[placeholder="描述您的设计理念..."]').value;
+            const aiLevelSelect = this.querySelector('select').value;
+            const tagsInput = this.querySelector('input[placeholder="AI设计,未来科技,3D渲染..."]').value;
+            const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-        // 创建新作品对象
-        const newWork = {
-            id: portfolioData.length + 1,
-            title,
-            author,
-            authorInitial: author.charAt(0),
-            description,
-            tags,
-            category: 'ai',
-            image: `🎨 ${title}`,
-            aiLevel: aiLevel === 'no-ai' ? '手工设计' :
-                aiLevel === 'ai-assisted' ? 'AI辅助设计' : 'AI完全生成',
-            likes: Math.floor(Math.random() * 100),
-            views: Math.floor(Math.random() * 1000)
-        };
+            // 映射AI级别值
+            let aiLevel;
+            switch(aiLevelSelect) {
+                case 'no-ai':
+                    aiLevel = '手工设计';
+                    break;
+                case 'ai-assisted':
+                    aiLevel = 'AI辅助设计';
+                    break;
+                case 'ai-generated':
+                    aiLevel = 'AI完全生成';
+                    break;
+                default:
+                    aiLevel = 'AI辅助设计';
+            }
 
-        // 添加到作品列表
-        portfolioData.unshift(newWork);
-        renderPortfolio();
+            // 确定分类
+            let category = 'ai';
+            if (tags.some(tag => tag.includes('UI') || tag.includes('界面'))) {
+                category = 'ui';
+            } else if (tags.some(tag => tag.includes('移动') || tag.includes('APP'))) {
+                category = 'mobile';
+            } else if (tags.some(tag => tag.includes('网页') || tag.includes('网站'))) {
+                category = 'web';
+            } else if (tags.some(tag => tag.includes('品牌') || tag.includes('logo'))) {
+                category = 'brand';
+            } else if (tags.some(tag => tag.includes('3D') || tag.includes('渲染'))) {
+                category = '3d';
+            }
 
-        // 关闭模态框并重置表单
-        closeUploadModal();
-        this.reset();
+            const newPortfolio = {
+                title,
+                author,
+                description,
+                category,
+                tags,
+                image_url: '', // 暂时为空，可以后续添加图片上传功能
+                ai_level: aiLevel
+            };
 
-        // 显示成功消息
-        showSuccessMessage('🎉 作品上传成功！AI正在为您的作品生成标签...');
-    });
+            try {
+                await createPortfolio(newPortfolio);
+                
+                // 关闭模态框并重置表单
+                closeUploadModal();
+                this.reset();
+                
+            } catch (error) {
+                console.error('Upload failed:', error);
+            }
+        });
+    }
 
     // 成功消息提示
     function showSuccessMessage(message) {
+        showToast(message, 'success');
+    }
+
+    // 错误消息提示
+    function showErrorMessage(message) {
+        showToast(message, 'error');
+    }
+
+    // 通用消息提示
+    function showToast(message, type = 'success') {
         const toast = document.createElement('div');
+        const bgColor = type === 'error' ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)' : 'var(--ai-gradient)';
+        
         toast.style.cssText = `
                 position: fixed;
                 top: 100px;
                 right: 2rem;
-                background: var(--ai-gradient);
+                background: ${bgColor};
                 color: white;
                 padding: 1rem 2rem;
                 border-radius: 10px;
@@ -1817,6 +2168,8 @@
                 z-index: 3000;
                 animation: slideInRight 0.3s ease;
                 backdrop-filter: blur(10px);
+                max-width: 300px;
+                word-wrap: break-word;
             `;
         toast.textContent = message;
         document.body.appendChild(toast);
@@ -1824,7 +2177,9 @@
         setTimeout(() => {
             toast.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => {
-                document.body.removeChild(toast);
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
             }, 300);
         }, 3000);
     }
@@ -1833,6 +2188,14 @@
     window.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal')) {
             e.target.style.display = 'none';
+        }
+        
+        // 点击外部关闭用户下拉菜单
+        if (!e.target.closest('.user-menu')) {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
         }
     });
 
@@ -1871,27 +2234,44 @@
     document.head.appendChild(style);
 
     // 初始化页面
-    document.addEventListener('DOMContentLoaded', function() {
-        initParticles();
-        renderPortfolio();
-        initBackToTop();
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            // 初始化各种功能
+            initParticles();
+            initFilterButtons();
+            initSearchInput();
+            initUploadForm();
+            initBackToTop();
+            
+            // 检查认证状态
+            checkAuthStatus();
 
-        // 添加键盘快捷键
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + K 聚焦搜索
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                document.getElementById('mainSearch').focus();
-            }
-            // ESC 关闭模态框
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal').forEach(modal => {
-                    if (modal.style.display === 'block') {
-                        modal.style.display = 'none';
-                    }
-                });
-            }
-        });
+            // 加载初始数据
+            await fetchPortfolios();
+            renderPortfolio();
+
+            // 添加键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + K 聚焦搜索
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    document.getElementById('mainSearch').focus();
+                }
+                // ESC 关闭模态框
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        if (modal.style.display === 'block') {
+                            modal.style.display = 'none';
+                        }
+                    });
+                }
+            });
+
+            console.log('DesignAI application initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize application:', error);
+            showErrorMessage('应用初始化失败，请刷新页面重试');
+        }
     });
 
     // 回到顶部功能

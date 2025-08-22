@@ -1,52 +1,50 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
 
-/cypress/videos/
-/cypress/screenshots/
+# Test binary, built with `go test -c`
+*.test
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Output of the go coverage tool
+*.out
 
-*.tsbuildinfo
+# Go workspace file
+go.work
+go.work.sum
 
-*-lock.json
-*.lock
-*.d.ts
-!env.d.ts
-*-lock.yaml
-dist/
-.pnpm-debug.log
-
-*.iml
-node_modules/
-*.zip
-dist_electron
-
-# local env files
-.env.local
-.env.*.local
-
-# Editor directories and files
+# IDE files
+.vscode/
 .idea/
-build
-pnpm-lock.yaml
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+nul
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary folders
+tmp/
+temp/
