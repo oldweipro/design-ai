@@ -15,11 +15,11 @@ type User struct {
 	Password  string    `json:"-" gorm:"not null;size:255"` // 不在JSON中返回密码
 	Avatar    string    `json:"avatar" gorm:"size:500"`
 	Bio       string    `json:"bio" gorm:"type:text"`
-	Role      string    `json:"role" gorm:"default:'user';size:20"` // user, admin
+	Role      string    `json:"role" gorm:"default:'user';size:20"`      // user, admin
 	Status    string    `json:"status" gorm:"default:'pending';size:20"` // pending, approved, rejected, banned
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
 	// 关联作品
 	Portfolios []Portfolio `json:"portfolios,omitempty" gorm:"foreignKey:UserID"`
 }
@@ -56,8 +56,8 @@ type UserResponse struct {
 	Bio       string    `json:"bio"`
 	Role      string    `json:"role"`
 	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // 注册请求

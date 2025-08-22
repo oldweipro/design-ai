@@ -80,12 +80,12 @@ The application uses Go's embedded file system with a specific template structur
 - `description` (text) - Portfolio description
 - `category` (string, required, indexed) - Portfolio category (ai, ui, web, mobile, brand, 3d)
 - `tags` (JSON string) - Array of tags stored as JSON
-- `image_url` (string) - URL to portfolio image
-- `ai_level` (string) - AI involvement level (AI完全生成, AI辅助设计, 手工设计)
+- `imageUrl` (string) - URL to portfolio image
+- `aiLevel` (string) - AI involvement level (AI完全生成, AI辅助设计, 手工设计)
 - `likes` (integer, default 0) - Like count
 - `views` (integer, default 0) - View count  
 - `status` (string, default 'published') - Portfolio status
-- `created_at`, `updated_at` (timestamps)
+- `createdAt`, `updatedAt` (timestamps)
 
 ## Dependencies
 - `github.com/gin-gonic/gin` - Web framework

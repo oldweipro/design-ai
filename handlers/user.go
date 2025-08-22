@@ -229,8 +229,8 @@ func GetUsers(c *gin.Context) {
 	})
 }
 
-// 管理员：审核用户
-func ApproveUser(c *gin.Context) {
+// 管理员：更新用户状态
+func UpdateUserStatus(c *gin.Context) {
 	userID := c.Param("id")
 
 	var req models.AdminUserRequest
@@ -295,4 +295,36 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
+// 管理员：重置用户密码
+func ResetUserPassword(c *gin.Context) {
+	userID := c.Param("id")
+
+	db := database.GetDB()
+	var user models.User
+
+	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// 生成新密码（这里简化为固定密码，实际应该生成随机密码并发送邮件）
+	newPassword := "Reset123456!"
+	
+	if err := user.HashPassword(newPassword); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	if err := db.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset password"})
+		return
+	}
+
+	// 实际应用中应该发送邮件，这里返回密码仅用于演示
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Password reset successfully",
+		"new_password": newPassword, // 实际应用中不应该返回密码
+	})
 }

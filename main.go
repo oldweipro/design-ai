@@ -110,11 +110,14 @@ func main() {
 		{
 			// 用户管理
 			admin.GET("/users", handlers.GetUsers)
-			admin.PUT("/users/:id", handlers.ApproveUser)
+			admin.PUT("/users/:id", handlers.UpdateUserStatus)
 			admin.DELETE("/users/:id", handlers.DeleteUser)
+			admin.POST("/users/:id/reset-password", handlers.ResetUserPassword)
 
-			// 作品审核
-			admin.PUT("/portfolios/:id/approve", handlers.ApprovePortfolio)
+			// 作品管理
+			admin.GET("/portfolios", handlers.GetAllPortfolios)
+			admin.PUT("/portfolios/:id", handlers.UpdatePortfolioStatus)
+			admin.DELETE("/portfolios/:id", handlers.AdminDeletePortfolio)
 		}
 	}
 

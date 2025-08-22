@@ -442,3 +442,117 @@ func convertToPortfolioResponse(portfolio models.Portfolio) models.PortfolioResp
 
 	return response
 }
+
+// 管理员：获取所有作品
+func GetAllPortfolios(c *gin.Context) {
+	db := database.GetDB()
+	var portfolios []models.Portfolio
+	var total int64
+
+	query := models.PortfolioQuery{
+		Page:     1,
+		PageSize: 50,
+	}
+	if err := c.ShouldBindQuery(&query); err == nil {
+		if query.Page <= 0 {
+			query.Page = 1
+		}
+		if query.PageSize <= 0 || query.PageSize > 100 {
+			query.PageSize = 50
+		}
+	}
+
+	dbQuery := db.Preload("User").Model(&models.Portfolio{})
+
+	// 状态过滤
+	if query.Status != "" {
+		dbQuery = dbQuery.Where("status = ?", query.Status)
+	}
+
+	// 分类过滤
+	if query.Category != "" {
+		dbQuery = dbQuery.Where("category = ?", query.Category)
+	}
+
+	// 搜索过滤
+	if query.Search != "" {
+		searchPattern := "%" + query.Search + "%"
+		dbQuery = dbQuery.Where("title LIKE ? OR description LIKE ? OR author LIKE ?", searchPattern, searchPattern, searchPattern)
+	}
+
+	// 获取总数
+	dbQuery.Count(&total)
+
+	// 分页
+	offset := (query.Page - 1) * query.PageSize
+	if err := dbQuery.Offset(offset).Limit(query.PageSize).Order("created_at DESC").Find(&portfolios).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch portfolios"})
+		return
+	}
+
+	// 转换为响应格式
+	var responses []models.PortfolioResponse
+	for _, portfolio := range portfolios {
+		responses = append(responses, convertToPortfolioResponse(portfolio))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        responses,
+		"total":       total,
+		"page":        query.Page,
+		"page_size":   query.PageSize,
+		"total_pages": (total + int64(query.PageSize) - 1) / int64(query.PageSize),
+	})
+}
+
+// 管理员：更新作品状态
+func UpdatePortfolioStatus(c *gin.Context) {
+	portfolioID := c.Param("id")
+
+	var req models.AdminPortfolioRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := database.GetDB()
+	var portfolio models.Portfolio
+
+	if err := db.Where("id = ?", portfolioID).First(&portfolio).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Portfolio not found"})
+		return
+	}
+
+	portfolio.Status = req.Status
+
+	if err := db.Save(&portfolio).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update portfolio"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Portfolio updated successfully",
+		"data":    convertToPortfolioResponse(portfolio),
+	})
+}
+
+// 管理员：删除作品
+func AdminDeletePortfolio(c *gin.Context) {
+	portfolioID := c.Param("id")
+
+	db := database.GetDB()
+	var portfolio models.Portfolio
+
+	if err := db.Where("id = ?", portfolioID).First(&portfolio).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Portfolio not found"})
+		return
+	}
+
+	// 硬删除作品
+	if err := db.Delete(&portfolio).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete portfolio"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Portfolio deleted successfully"})
+}

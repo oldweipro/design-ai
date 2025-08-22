@@ -684,6 +684,120 @@
             background: var(--bg-accent);
             color: var(--text-primary);
         }
+
+        /* 用户管理样式 */
+        .user-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .user-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .user-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .user-avatar-large {
+            width: 50px;
+            height: 50px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-details h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-details p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.25rem 0;
+        }
+
+        .user-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+
+        .status-pending {
+            background: rgba(237, 137, 54, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .status-approved {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .status-rejected {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+        }
+
+        .status-banned {
+            background: rgba(0, 0, 0, 0.1);
+            color: #666;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -722,6 +836,23 @@
                 <a href="#settings" class="nav-item" data-section="settings">
                     <span class="nav-icon">⚙️</span>
                     <span>设置</span>
+                </a>
+            </div>
+
+            <!-- 管理员功能区域 -->
+            <div class="nav-section" id="adminSection" style="display: none;">
+                <div class="nav-title">管理员功能</div>
+                <a href="#user-management" class="nav-item" data-section="user-management">
+                    <span class="nav-icon">👥</span>
+                    <span>用户管理</span>
+                </a>
+                <a href="#portfolio-review" class="nav-item" data-section="portfolio-review">
+                    <span class="nav-icon">🔍</span>
+                    <span>作品审核</span>
+                </a>
+                <a href="#system-settings" class="nav-item" data-section="system-settings">
+                    <span class="nav-icon">🛠️</span>
+                    <span>系统设置</span>
                 </a>
             </div>
 
@@ -911,7 +1042,7 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
                             <div class="form-group">
                                 <label class="form-label">AI参与程度</label>
-                                <select class="form-input" name="ai_level" required>
+                                <select class="form-input" name="aiLevel" required>
                                     <option value="">选择AI参与程度</option>
                                     <option value="手工设计">完全手工设计</option>
                                     <option value="AI辅助设计">AI辅助设计</option>
@@ -924,17 +1055,122 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 2rem;">
-                            <label class="form-label">作品图片URL</label>
-                            <input type="url" class="form-input" name="image_url" placeholder="https://example.com/image.jpg">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品图片URL</label>
+                                <input type="url" class="form-input" name="imageUrl" placeholder="https://example.com/image.jpg">
+                            </div>
+<!--                            <div class="form-group">-->
+<!--                                <label class="form-label">发布状态</label>-->
+<!--                                <select class="form-input" name="status" id="createStatus" required>-->
+<!--                                    <option value="draft">保存为草稿</option>-->
+<!--                                    <option value="published">立即发布</option>-->
+<!--                                </select>-->
+<!--                            </div>-->
                         </div>
 
-                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <div style="display: flex; gap: 1rem; justify-content: space-between;">
                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('createPortfolioForm').reset()">重置</button>
-                            <button type="submit" class="btn btn-primary">
-                                <span>🚀</span>
-                                <span>创建作品</span>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                                    <span>📝</span>
+                                    <span>保存草稿</span>
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <span>🚀</span>
+                                    <span>创建作品</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 编辑作品页面 -->
+            <div id="edit-portfolio-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">编辑作品</h2>
+                        <button class="btn btn-secondary" onclick="showSection('my-portfolios')">
+                            <span>←</span>
+                            <span>返回作品列表</span>
+                        </button>
+                    </div>
+                    
+                    <form id="editPortfolioForm" style="max-width: 800px;">
+                        <input type="hidden" id="editPortfolioId" name="id">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品标题</label>
+                                <input type="text" class="form-input" name="title" id="editTitle" placeholder="输入作品标题..." required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品分类</label>
+                                <select class="form-input" name="category" id="editCategory" required>
+                                    <option value="">选择分类</option>
+                                    <option value="ai">AI生成</option>
+                                    <option value="ui">UI/UX设计</option>
+                                    <option value="web">网页设计</option>
+                                    <option value="mobile">移动应用</option>
+                                    <option value="brand">品牌设计</option>
+                                    <option value="3d">3D渲染</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">作品描述</label>
+                            <textarea class="form-input" name="description" id="editDescription" rows="3" placeholder="描述您的设计理念和创作过程..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">详细内容</label>
+                            <textarea class="form-input" name="content" id="editContent" rows="6" placeholder="详细介绍作品的设计思路、技术实现、创意灵感等..."></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">AI参与程度</label>
+                                <select class="form-input" name="aiLevel" id="editAiLevel" required>
+                                    <option value="">选择AI参与程度</option>
+                                    <option value="手工设计">完全手工设计</option>
+                                    <option value="AI辅助设计">AI辅助设计</option>
+                                    <option value="AI完全生成">AI完全生成</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品标签</label>
+                                <input type="text" class="form-input" name="tags" id="editTags" placeholder="输入标签，用逗号分隔...">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品图片URL</label>
+                                <input type="url" class="form-input" name="imageUrl" id="editImageUrl" placeholder="https://example.com/image.jpg">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品状态</label>
+                                <select class="form-input" name="status" id="editStatus" required>
+                                    <option value="draft">草稿</option>
+                                    <option value="published">已发布</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: space-between;">
+                            <button type="button" class="btn btn-secondary" onclick="deletePortfolioFromEdit()">
+                                <span>🗑️</span>
+                                <span>删除作品</span>
                             </button>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn btn-secondary" onclick="showSection('my-portfolios')">取消</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <span>💾</span>
+                                    <span>保存更改</span>
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -976,6 +1212,150 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="user-management-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">用户管理</h2>
+                        <div class="section-actions">
+                            <select id="userStatusFilter" class="form-input" style="width: auto; margin-right: 1rem;">
+                                <option value="">全部状态</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已批准</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="banned">已封禁</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="loadUsers()">
+                                <span>🔄</span>
+                                <span>刷新</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 统计卡片 -->
+                    <div class="stats-grid" style="margin-bottom: 2rem;">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>👥 总用户数</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="totalUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="usersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>⏳ 待审核</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="pendingUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="pendingUsersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>✅ 已批准</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="approvedUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="approvedUsersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户列表 -->
+                    <div class="user-list" id="usersList">
+                        <!-- 用户将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 作品审核页面 -->
+            <div id="portfolio-review-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">作品审核</h2>
+                        <div class="section-actions">
+                            <select id="portfolioReviewFilter" class="form-input" style="width: auto; margin-right: 1rem;">
+                                <option value="">全部状态</option>
+                                <option value="draft">草稿</option>
+                                <option value="published">已发布</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="loadAllPortfolios()">
+                                <span>🔄</span>
+                                <span>刷新</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="portfolio-list" id="reviewPortfoliosList">
+                        <!-- 作品将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置页面 -->
+            <div id="system-settings-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">系统设置</h2>
+                    </div>
+                    
+                    <div style="max-width: 800px;">
+                        <div class="form-group">
+                            <h3>网站设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="form-label">网站标题</label>
+                                <input type="text" class="form-input" value="DesignAI" placeholder="网站标题">
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <label class="form-label">网站描述</label>
+                                <textarea class="form-input" rows="3" placeholder="网站描述">AI驱动的设计作品展示平台</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 2rem;">
+                            <h3>用户设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" checked> 允许用户注册
+                                </label>
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox"> 新用户需要管理员审核
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 2rem;">
+                            <h3>作品设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox"> 新作品需要审核后发布
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-primary">
+                                <span>💾</span>
+                                <span>保存设置</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1088,11 +1468,22 @@
             try {
                 currentUser = JSON.parse(userStr);
                 updateUserInfo();
+                checkAdminAccess();
                 return true;
             } catch (error) {
                 console.error('Failed to parse user data:', error);
                 logout();
                 return false;
+            }
+        }
+
+        // 检查管理员权限并显示/隐藏管理员功能
+        function checkAdminAccess() {
+            const adminSection = document.getElementById('adminSection');
+            if (currentUser && currentUser.role === 'admin') {
+                adminSection.style.display = 'block';
+            } else {
+                adminSection.style.display = 'none';
             }
         }
 
@@ -1172,8 +1563,12 @@
                 'dashboard': '仪表板',
                 'my-portfolios': '我的作品',
                 'create-portfolio': '创建作品',
+                'edit-portfolio': '编辑作品',
                 'profile': '个人资料',
-                'settings': '设置'
+                'settings': '设置',
+                'user-management': '用户管理',
+                'portfolio-review': '作品审核',
+                'system-settings': '系统设置'
             };
             
             document.getElementById('pageTitle').textContent = titles[sectionName] || '仪表板';
@@ -1188,6 +1583,15 @@
                     break;
                 case 'profile':
                     loadProfile();
+                    break;
+                case 'user-management':
+                    loadUsers();
+                    break;
+                case 'portfolio-review':
+                    loadAllPortfolios();
+                    break;
+                case 'system-settings':
+                    // 系统设置页面静态显示，不需要加载数据
                     break;
             }
 
@@ -1284,12 +1688,12 @@
                 return `
                     <div class="portfolio-item" onclick="editPortfolio('${portfolio.id}')">
                         <div class="portfolio-image">
-                            ${portfolio.image_url ? `<img src="${portfolio.image_url}" alt="${portfolio.title}">` : '🎨'}
+                            ${portfolio.imageUrl ? `<img src="${portfolio.imageUrl}" alt="${portfolio.title}">` : '🎨'}
                         </div>
                         <div class="portfolio-info">
                             <h4 class="portfolio-title">${portfolio.title}</h4>
                             <div class="portfolio-meta">
-                                <span>📅 ${new Date(portfolio.created_at).toLocaleDateString()}</span>
+                                <span>📅 ${new Date(portfolio.createdAt).toLocaleDateString()}</span>
                                 <span>👁️ ${portfolio.views || 0}</span>
                                 <span>❤️ ${portfolio.likes || 0}</span>
                                 <span class="portfolio-status ${statusClass}">${statusText}</span>
@@ -1347,8 +1751,9 @@
                     content: formData.get('content'),
                     category: formData.get('category'),
                     tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
-                    image_url: formData.get('image_url'),
-                    ai_level: formData.get('ai_level')
+                    imageUrl: formData.get('imageUrl'),
+                    aiLevel: formData.get('aiLevel'),
+                    status: formData.get('status') || 'draft'
                 };
 
                 const result = await apiRequest('/portfolios', {
@@ -1367,6 +1772,17 @@
                 console.error('Failed to create portfolio:', error);
                 showToast('创建作品失败：' + error.message, 'error');
             }
+        }
+
+        // 保存草稿（快捷方式）
+        function saveDraft() {
+            // 设置状态为草稿
+            document.getElementById('createStatus').value = 'draft';
+            
+            // 触发表单提交
+            const form = document.getElementById('createPortfolioForm');
+            const formData = new FormData(form);
+            handleCreatePortfolio(formData);
         }
 
         // 加载用户资料
@@ -1413,9 +1829,442 @@
             }
         }
 
+        // 处理作品更新
+        async function handleUpdatePortfolio(formData) {
+            try {
+                const portfolioId = formData.get('id');
+                const updateData = {
+                    title: formData.get('title'),
+                    author: currentUser.username,
+                    description: formData.get('description'),
+                    content: formData.get('content'),
+                    category: formData.get('category'),
+                    tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
+                    imageUrl: formData.get('imageUrl'),
+                    aiLevel: formData.get('aiLevel'),
+                    status: formData.get('status')
+                };
+
+                const result = await apiRequest(`/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                showToast('作品更新成功！', 'success');
+                
+                // 刷新作品列表
+                await loadMyPortfolios();
+                showSection('my-portfolios');
+
+            } catch (error) {
+                console.error('Failed to update portfolio:', error);
+                showToast('更新作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 从编辑页面删除作品
+        async function deletePortfolioFromEdit() {
+            const portfolioId = document.getElementById('editPortfolioId').value;
+            
+            if (!portfolioId) {
+                showToast('未找到作品ID', 'error');
+                return;
+            }
+
+            if (!confirm('确定要删除这个作品吗？此操作不可撤销。')) {
+                return;
+            }
+
+            try {
+                await apiRequest(`/portfolios/${portfolioId}`, {
+                    method: 'DELETE'
+                });
+
+                showToast('作品删除成功！', 'success');
+                
+                // 刷新作品列表并返回作品列表页面
+                await loadMyPortfolios();
+                showSection('my-portfolios');
+
+            } catch (error) {
+                console.error('Failed to delete portfolio:', error);
+                showToast('删除作品失败：' + error.message, 'error');
+            }
+        }
+
+        // ===== 用户管理功能 =====
+
+        // 加载所有用户
+        async function loadUsers() {
+            try {
+                const result = await apiRequest('/admin/users');
+                const users = result.data || [];
+                
+                // 更新统计数据
+                updateUserStats(users);
+                
+                // 渲染用户列表
+                renderUserList(users);
+                
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                showToast('加载用户列表失败', 'error');
+            }
+        }
+
+        // 更新用户统计
+        function updateUserStats(users) {
+            const totalUsers = users.length;
+            const pendingUsers = users.filter(u => u.status === 'pending').length;
+            const approvedUsers = users.filter(u => u.status === 'approved').length;
+            
+            document.getElementById('totalUsersCount').textContent = totalUsers;
+            document.getElementById('pendingUsersCount').textContent = pendingUsers;
+            document.getElementById('approvedUsersCount').textContent = approvedUsers;
+        }
+
+        // 渲染用户列表
+        function renderUserList(users) {
+            const container = document.getElementById('usersList');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <h3>暂无用户数据</h3>
+                        <p>当前系统中没有用户记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = users.map(user => {
+                const statusClass = {
+                    'pending': 'status-pending',
+                    'approved': 'status-approved',
+                    'rejected': 'status-rejected',
+                    'banned': 'status-banned'
+                }[user.status] || 'status-pending';
+
+                const statusText = {
+                    'pending': '待审核',
+                    'approved': '已批准',
+                    'rejected': '已拒绝',
+                    'banned': '已封禁'
+                }[user.status] || '待审核';
+
+                return `
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-avatar-large">${user.username.charAt(0).toUpperCase()}</div>
+                            <div class="user-details">
+                                <h4>${user.username}</h4>
+                                <p>📧 ${user.email}</p>
+                                <p>📅 注册时间：${new Date(user.createdAt).toLocaleDateString()}</p>
+                                <p>🎨 作品数：${user.portfolio_count || 0}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div class="user-status ${statusClass}">${statusText}</div>
+                            <div class="user-actions">
+                                ${user.status === 'pending' ? `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="approveUser('${user.id}')">✅ 批准</button>
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="rejectUser('${user.id}')">❌ 拒绝</button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="editUser('${user.id}')">✏️ 编辑</button>
+                                ${user.status !== 'banned' ? `
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="banUser('${user.id}')">🚫 封禁</button>
+                                ` : `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="unbanUser('${user.id}')">🔓 解禁</button>
+                                `}
+                                <button class="btn btn-sm" style="background: var(--warning-color); color: white;" onclick="resetPassword('${user.id}')">🔑 重置密码</button>
+                                <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="deleteUser('${user.id}')">🗑️ 删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 批准用户
+        async function approveUser(userId) {
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'approved' })
+                });
+                
+                showToast('用户批准成功', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to approve user:', error);
+                showToast('批准用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 拒绝用户
+        async function rejectUser(userId) {
+            if (!confirm('确定要拒绝这个用户吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                
+                showToast('用户已拒绝', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to reject user:', error);
+                showToast('拒绝用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 封禁用户
+        async function banUser(userId) {
+            if (!confirm('确定要封禁这个用户吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'banned' })
+                });
+                
+                showToast('用户已封禁', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to ban user:', error);
+                showToast('封禁用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 解禁用户
+        async function unbanUser(userId) {
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'approved' })
+                });
+                
+                showToast('用户已解禁', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to unban user:', error);
+                showToast('解禁用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 编辑用户
+        async function editUser(userId) {
+            showToast('用户编辑功能开发中...', 'info');
+        }
+
+        // 重置用户密码
+        async function resetPassword(userId) {
+            if (!confirm('确定要重置这个用户的密码吗？新密码将发送到用户邮箱。')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}/reset-password`, {
+                    method: 'POST'
+                });
+                
+                showToast('密码重置成功，新密码已发送到用户邮箱', 'success');
+                
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+                showToast('重置密码失败：' + error.message, 'error');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？此操作不可撤销，将同时删除用户的所有作品！')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                showToast('用户删除成功', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to delete user:', error);
+                showToast('删除用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 加载所有作品（用于审核）
+        async function loadAllPortfolios() {
+            try {
+                const result = await apiRequest('/admin/portfolios');
+                const portfolios = result.data || [];
+                
+                renderPortfolioReviewList(portfolios);
+                
+            } catch (error) {
+                console.error('Failed to load all portfolios:', error);
+                showToast('加载作品列表失败', 'error');
+            }
+        }
+
+        // 渲染作品审核列表
+        function renderPortfolioReviewList(portfolios) {
+            const container = document.getElementById('reviewPortfoliosList');
+            
+            if (!portfolios || portfolios.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <h3>暂无作品数据</h3>
+                        <p>当前系统中没有作品需要审核</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = portfolios.map(portfolio => {
+                const statusClass = {
+                    'draft': 'status-pending',
+                    'published': 'status-approved',
+                    'rejected': 'status-rejected'
+                }[portfolio.status] || 'status-pending';
+
+                const statusText = {
+                    'draft': '草稿',
+                    'published': '已发布',
+                    'rejected': '已拒绝'
+                }[portfolio.status] || '草稿';
+
+                return `
+                    <div class="portfolio-item">
+                        <div class="portfolio-image">
+                            ${portfolio.imageUrl ? `<img src="${portfolio.imageUrl}" alt="${portfolio.title}">` : '🎨'}
+                        </div>
+                        <div class="portfolio-info">
+                            <h4 class="portfolio-title">${portfolio.title}</h4>
+                            <div class="portfolio-meta">
+                                <span>👤 ${portfolio.author}</span>
+                                <span>📅 ${new Date(portfolio.createdAt).toLocaleDateString()}</span>
+                                <span>👁️ ${portfolio.views || 0}</span>
+                                <span>❤️ ${portfolio.likes || 0}</span>
+                                <span class="portfolio-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <p style="margin: 1rem 0; color: var(--text-secondary);">${portfolio.description || '暂无描述'}</p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                ${portfolio.status === 'draft' ? `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="publishPortfolio('${portfolio.id}')">✅ 发布</button>
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="rejectPortfolio('${portfolio.id}')">❌ 拒绝</button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="viewPortfolioDetail('${portfolio.id}')">👁️ 查看详情</button>
+                                <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="deletePortfolioAdmin('${portfolio.id}')">🗑️ 删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 发布作品
+        async function publishPortfolio(portfolioId) {
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'published' })
+                });
+                
+                showToast('作品已发布', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to publish portfolio:', error);
+                showToast('发布作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 拒绝作品
+        async function rejectPortfolio(portfolioId) {
+            if (!confirm('确定要拒绝这个作品吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                
+                showToast('作品已拒绝', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to reject portfolio:', error);
+                showToast('拒绝作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 管理员删除作品
+        async function deletePortfolioAdmin(portfolioId) {
+            if (!confirm('确定要删除这个作品吗？此操作不可撤销！')) return;
+            
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'DELETE'
+                });
+                
+                showToast('作品删除成功', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to delete portfolio:', error);
+                showToast('删除作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 查看作品详情
+        async function viewPortfolioDetail(portfolioId) {
+            showToast('作品详情查看功能开发中...', 'info');
+        }
+
         // 编辑作品（暂时显示提示，后续可以实现编辑功能）
-        function editPortfolio(portfolioId) {
-            showToast('作品编辑功能开发中...', 'info');
+        async function editPortfolio(portfolioId) {
+            try {
+                // 获取作品详情
+                const result = await apiRequest(`/portfolios/${portfolioId}`);
+                const portfolio = result.data;
+                
+                // 填充表单数据
+                document.getElementById('editPortfolioId').value = portfolio.id;
+                document.getElementById('editTitle').value = portfolio.title || '';
+                document.getElementById('editCategory').value = portfolio.category || '';
+                document.getElementById('editDescription').value = portfolio.description || '';
+                document.getElementById('editContent').value = portfolio.content || '';
+                document.getElementById('editAiLevel').value = portfolio.aiLevel || '';
+                document.getElementById('editImageUrl').value = portfolio.imageUrl || '';
+                document.getElementById('editStatus').value = portfolio.status || 'draft';
+                
+                // 处理标签（从数组转换为逗号分隔的字符串）
+                if (Array.isArray(portfolio.tags)) {
+                    document.getElementById('editTags').value = portfolio.tags.join(', ');
+                } else if (typeof portfolio.tags === 'string') {
+                    // 如果已经是字符串，可能是JSON字符串，尝试解析
+                    try {
+                        const tags = JSON.parse(portfolio.tags);
+                        document.getElementById('editTags').value = Array.isArray(tags) ? tags.join(', ') : portfolio.tags;
+                    } catch (e) {
+                        document.getElementById('editTags').value = portfolio.tags;
+                    }
+                } else {
+                    document.getElementById('editTags').value = '';
+                }
+                
+                // 显示编辑页面
+                showSection('edit-portfolio');
+                
+            } catch (error) {
+                console.error('Failed to load portfolio for editing:', error);
+                showToast('加载作品数据失败，请稍后重试', 'error');
+            }
         }
 
         // 显示提示信息
@@ -1487,6 +2336,13 @@
                 e.preventDefault();
                 const formData = new FormData(this);
                 handleUpdateProfile(formData);
+            });
+
+            // 编辑作品表单提交
+            document.getElementById('editPortfolioForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                handleUpdatePortfolio(formData);
             });
 
             // 状态过滤器

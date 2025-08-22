@@ -1709,45 +1709,6 @@
         }, 2000);
     }
 
-    // 编辑作品
-    function editPortfolio(portfolioId) {
-        if (!currentUser) {
-            promptLogin();
-            return;
-        }
-        
-        showSuccessMessage('正在跳转到编辑页面...');
-        // 跳转到仪表板的编辑页面
-        window.location.href = `/dashboard#edit-portfolio-${portfolioId}`;
-    }
-
-    // 删除作品
-    async function deletePortfolio(portfolioId) {
-        if (!currentUser) {
-            promptLogin();
-            return;
-        }
-
-        if (!confirm('确定要删除这个作品吗？此操作不可撤销。')) {
-            return;
-        }
-
-        try {
-            await apiRequest(`/portfolios/${portfolioId}`, {
-                method: 'DELETE'
-            });
-
-            showSuccessMessage('作品删除成功');
-            
-            // 重新加载作品列表
-            await fetchPortfolios({ category: currentFilter, search: currentSearchTerm });
-            renderPortfolio();
-
-        } catch (error) {
-            console.error('Failed to delete portfolio:', error);
-            showErrorMessage('删除作品失败：' + error.message);
-        }
-    }
 
     // 获取作品列表
     async function fetchPortfolios(filters = {}) {
@@ -1906,7 +1867,7 @@
                 const tags = Array.isArray(item.tags) ? item.tags : [];
 
                 // 检查是否是当前用户的作品
-                const isOwnPortfolio = currentUser && item.user_id === currentUser.id;
+                const isOwnPortfolio = currentUser && item.userId === currentUser.id;
                 const isAuthenticated = !!currentUser;
 
                 portfolioItem.innerHTML = `
@@ -1931,12 +1892,6 @@
                             <div class="portfolio-tags">
                                 ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
                             </div>
-                            ${isOwnPortfolio ? `
-                            <div class="portfolio-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                                <button class="action-btn edit-btn" onclick="event.stopPropagation(); editPortfolio('${item.id}')" style="background: var(--info-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">✏️ 编辑</button>
-                                <button class="action-btn delete-btn" onclick="event.stopPropagation(); deletePortfolio('${item.id}')" style="background: var(--error-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">🗑️ 删除</button>
-                            </div>
-                            ` : ''}
                         </div>
                     `;
 
@@ -2029,7 +1984,7 @@
     function showDetail(item) {
         const detailContent = document.getElementById('detailContent');
         const tags = Array.isArray(item.tags) ? item.tags : [];
-        const isOwnPortfolio = currentUser && item.user_id === currentUser.id;
+        const isOwnPortfolio = currentUser && item.userId === currentUser.id;
         const isAuthenticated = !!currentUser;
         
         detailContent.innerHTML = `
@@ -2062,10 +2017,6 @@
                         }
                         <button class="btn btn-secondary">📥 下载</button>
                         <button class="btn btn-secondary">📤 分享</button>
-                        ${isOwnPortfolio ? `
-                            <button class="btn btn-secondary" onclick="editPortfolio('${item.id}')" style="background: var(--info-color); color: white;">✏️ 编辑</button>
-                            <button class="btn btn-secondary" onclick="deletePortfolio('${item.id}')" style="background: var(--error-color); color: white;">🗑️ 删除</button>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2124,8 +2075,8 @@
                 description,
                 category,
                 tags,
-                image_url: '', // 暂时为空，可以后续添加图片上传功能
-                ai_level: aiLevel
+                imageUrl: '', // 暂时为空，可以后续添加图片上传功能
+                aiLevel: aiLevel
             };
 
             try {

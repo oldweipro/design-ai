@@ -12,7 +12,8 @@
       "Bash(timeout:*)",
       "Bash(del design_ai.db)",
       "Bash(rm:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
