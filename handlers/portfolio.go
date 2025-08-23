@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +61,7 @@ func GetPortfolios(c *gin.Context) {
 		return
 	}
 
-	var responses []models.PortfolioResponse
+	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
 		response := convertToPortfolioResponse(portfolio)
 		responses = append(responses, response)
@@ -84,9 +85,9 @@ func GetPortfolioByID(c *gin.Context) {
 	// 根据用户角色决定可见性
 	isAdmin := middleware.IsAdmin(c)
 	userID, hasUser := middleware.GetCurrentUserID(c)
-	
+
 	query := db.Preload("User").Where("id = ?", id)
-	
+
 	if !isAdmin {
 		// 普通用户只能看到已发布的作品，或者自己的作品
 		if hasUser {
@@ -208,7 +209,7 @@ func UpdatePortfolio(c *gin.Context) {
 	if req.AILevel != "" {
 		portfolio.AILevel = req.AILevel
 	}
-	
+
 	// 状态更新：普通用户只能设为草稿，管理员可以设任何状态
 	if req.Status != "" {
 		if isAdmin {
@@ -382,7 +383,7 @@ func GetMyPortfolios(c *gin.Context) {
 		return
 	}
 
-	var responses []models.PortfolioResponse
+	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
 		response := convertToPortfolioResponse(portfolio)
 		responses = append(responses, response)
@@ -400,7 +401,9 @@ func GetMyPortfolios(c *gin.Context) {
 func convertToPortfolioResponse(portfolio models.Portfolio) models.PortfolioResponse {
 	var tags []string
 	if portfolio.Tags != "" {
-		json.Unmarshal([]byte(portfolio.Tags), &tags)
+		if err := json.Unmarshal([]byte(portfolio.Tags), &tags); err != nil {
+			log.Printf("Failed to unmarshal tags for portfolio %s: %v", portfolio.ID, err)
+		}
 	}
 
 	authorInitial := ""
@@ -491,7 +494,7 @@ func GetAllPortfolios(c *gin.Context) {
 	}
 
 	// 转换为响应格式
-	var responses []models.PortfolioResponse
+	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
 		responses = append(responses, convertToPortfolioResponse(portfolio))
 	}

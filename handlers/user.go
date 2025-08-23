@@ -215,7 +215,7 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	var responses []models.UserResponse
+	responses := make([]models.UserResponse, 0, len(users))
 	for _, user := range users {
 		responses = append(responses, user.ToResponse())
 	}
@@ -311,7 +311,7 @@ func ResetUserPassword(c *gin.Context) {
 
 	// 生成新密码（这里简化为固定密码，实际应该生成随机密码并发送邮件）
 	newPassword := "Reset123456!"
-	
+
 	if err := user.HashPassword(newPassword); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
@@ -324,7 +324,7 @@ func ResetUserPassword(c *gin.Context) {
 
 	// 实际应用中应该发送邮件，这里返回密码仅用于演示
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Password reset successfully",
+		"message":      "Password reset successfully",
 		"new_password": newPassword, // 实际应用中不应该返回密码
 	})
 }

@@ -69,7 +69,7 @@ func extractToken(c *gin.Context) string {
 	if len(strings.Split(bearerToken, " ")) == 2 {
 		return strings.Split(bearerToken, " ")[1]
 	}
-	
+
 	// 从Query参数中获取
 	return c.Query("token")
 }
