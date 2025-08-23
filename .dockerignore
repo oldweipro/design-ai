@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+LICENSE
+
+# Images
+img/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+design-ai
+*.exe
+
+# Database files (will be created in container)
+*.db
+
+# Temporary files
+*.tmp
+*.log
+
+# Go specific
+vendor/

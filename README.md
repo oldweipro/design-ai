@@ -271,18 +271,115 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 5. 配置日志记录
 
 ### Docker部署
-```dockerfile
-FROM golang:1.19-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o design-ai main.go
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/design-ai .
-EXPOSE 8080
-CMD ["./design-ai"]
+项目提供了完整的Docker容器化方案，支持单容器和多容器编排部署。
+
+#### 快速启动
+
+**方式一：使用Docker Compose（推荐）**
+```bash
+# 启动应用
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f design-ai
+
+# 停止应用
+docker-compose down
+```
+
+**方式二：手动构建和运行**
+```bash
+# 构建镜像
+docker build -t design-ai:latest .
+
+# 运行容器
+docker run -d \
+  --name design-ai \
+  -p 8080:8080 \
+  -v design_ai_data:/home/appuser/data \
+  design-ai:latest
+```
+
+#### 生产环境部署
+
+**使用Nginx反向代理**
+```bash
+# 启动完整生产环境（包括Nginx）
+docker-compose --profile production up -d
+
+# 自定义域名和SSL证书
+# 1. 修改nginx.conf中的server_name
+# 2. 添加SSL证书到./ssl目录
+# 3. 取消注释nginx.conf中的HTTPS配置
+```
+
+#### 环境变量配置
+
+支持以下环境变量自定义配置：
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `PORT` | 8080 | 应用监听端口 |
+| `GIN_MODE` | release | Gin框架模式（debug/release） |
+| `DATABASE_URL` | ./data/design_ai.db | 数据库文件路径 |
+| `JWT_SECRET` | 自动生成 | JWT签名密钥 |
+
+#### 数据持久化
+
+使用Docker Volume持久化数据：
+```bash
+# 查看数据卷
+docker volume ls
+
+# 备份数据
+docker run --rm -v design_ai_data:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz -C /data .
+
+# 恢复数据
+docker run --rm -v design_ai_data:/data -v $(pwd):/backup alpine tar xzf /backup/backup.tar.gz -C /data
+```
+
+#### 健康检查和监控
+
+容器内置健康检查：
+```bash
+# 检查容器健康状态
+docker ps
+
+# 查看健康检查日志
+docker inspect --format='{{json .State.Health}}' design-ai
+```
+
+#### 多环境部署
+
+**开发环境**
+```bash
+# 开发模式（启用热重载）
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+**生产环境**
+```bash
+# 生产模式（包含Nginx和SSL）
+docker-compose --profile production up -d
+```
+
+#### 故障排除
+
+常见问题解决：
+```bash
+# 查看应用日志
+docker-compose logs design-ai
+
+# 进入容器调试
+docker-compose exec design-ai sh
+
+# 重启服务
+docker-compose restart design-ai
+
+# 清理并重建
+docker-compose down -v
+docker-compose up --build -d
 ```
 
 ## 贡献指南
