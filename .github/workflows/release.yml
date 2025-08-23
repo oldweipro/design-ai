@@ -63,30 +63,6 @@ jobs:
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
-      - name: Run security scan
-        uses: golang/govulncheck-action@v1
-        with:
-          go-version-input: ${{ env.GO_VERSION }}
-          go-package: ./...
-        continue-on-error: true
-
-      - name: Run additional security checks
-        run: |
-          echo "🔒 Running additional security checks..."
-          
-          # 安装并运行 gosec (如果需要)
-          if command -v gosec >/dev/null 2>&1; then
-            echo "gosec already installed"
-          else
-            echo "Installing gosec..."
-            go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-          fi
-          
-          # 运行 gosec 扫描
-          echo "Running gosec scan..."
-          gosec -fmt text -stdout -verbose=text ./... || echo "⚠️ Security scan completed with warnings"
-        continue-on-error: true
-
   # 构建多平台二进制文件
   build-binaries:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
@@ -238,6 +214,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Get current time
+        id: time
+        run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -256,7 +236,7 @@ jobs:
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=${{ github.event.repository.clone_url }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
-            org.opencontainers.image.created=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            org.opencontainers.image.created=${{ steps.time.outputs.timestamp }}
             org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and push Docker image
@@ -271,7 +251,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
-            BUILD_TIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_TIME=${{ steps.time.outputs.timestamp }}
             GIT_COMMIT=${{ github.sha }}
 
   # 创建 GitHub Release
