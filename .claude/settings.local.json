@@ -13,7 +13,8 @@
       "Bash(del design_ai.db)",
       "Bash(rm:*)",
       "Bash(taskkill:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(make:*)"
     ],
     "deny": []
   }

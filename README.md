@@ -227,8 +227,11 @@ type Portfolio struct {
 
 ### 环境变量
 - `PORT`: 服务器端口（默认8080）
-- `DATABASE_URL`: 数据库连接字符串（默认./design_ai.db）
+- `DATABASE_URL`: 数据库文件路径（默认design_ai.db）
+- `DB_PATH`: 数据库文件路径（备用，与DATABASE_URL等效）
 - `JWT_SECRET`: JWT签名密钥（默认自动生成）
+- `GIN_MODE`: Gin框架模式（默认debug）
+- `TZ`: 时区设置（默认系统时区）
 
 ### 数据库配置
 应用使用SQLite数据库，首次运行时会自动：
@@ -252,7 +255,10 @@ type Portfolio struct {
 ### 数据库迁移
 ```go
 // 在 database/database.go 中添加新模型的自动迁移
-err = db.AutoMigrate(&models.NewModel{})
+err = DB.AutoMigrate(&models.NewModel{})
+if err != nil {
+    log.Fatal("Failed to migrate database:", err)
+}
 ```
 
 ### API测试
@@ -299,7 +305,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 
 ### Docker部署
 
-项目提供了完整的Docker容器化方案，支持单容器和多容器编排部署。
+项目提供了完整的Docker容器化方案，支持数据持久化和环境变量配置。
 
 #### 快速启动
 
@@ -320,11 +326,18 @@ docker-compose down
 # 构建镜像
 docker build -t design-ai:latest .
 
-# 运行容器
+# 运行容器（数据持久化到本地目录）
 docker run -d \
   --name design-ai \
   -p 8080:8080 \
-  -v design_ai_data:/home/appuser/data \
+  -v $(pwd)/data:/app/data \
+  design-ai:latest
+
+# 或使用Docker Volume
+docker run -d \
+  --name design-ai \
+  -p 8080:8080 \
+  -v design_ai_data:/app/data \
   design-ai:latest
 ```
 
@@ -349,13 +362,59 @@ docker-compose --profile production up -d
 |--------|--------|------|
 | `PORT` | 8080 | 应用监听端口 |
 | `GIN_MODE` | release | Gin框架模式（debug/release） |
-| `DATABASE_URL` | ./data/design_ai.db | 数据库文件路径 |
+| `DATABASE_URL` | /app/data/design_ai.db | 数据库文件路径 |
+| `DB_PATH` | 同DATABASE_URL | 数据库文件路径（备用） |
 | `JWT_SECRET` | 自动生成 | JWT签名密钥 |
+| `TZ` | Asia/Shanghai | 时区设置 |
+
+**数据库路径配置说明：**
+- 优先使用 `DATABASE_URL` 环境变量
+- 如果未设置 `DATABASE_URL`，则使用 `DB_PATH`
+- 如果都未设置，使用默认路径 `design_ai.db`
+- 应用会自动创建数据库目录（如果不存在）
+
+**示例：**
+```bash
+# 本地开发环境
+DATABASE_URL=./design_ai.db ./design-ai
+
+# 容器环境（推荐）
+docker run -e DATABASE_URL=/app/data/design_ai.db design-ai
+
+# 自定义数据目录
+docker run -e DATABASE_URL=/custom/path/db.sqlite design-ai
+```
 
 #### 数据持久化
 
-使用Docker Volume持久化数据：
+**方式一：本地目录挂载（推荐）**
 ```bash
+# 挂载本地目录（更直观，便于备份）
+docker run -d \
+  --name design-ai \
+  -p 8080:8080 \
+  -v $(pwd)/data:/app/data \
+  design-ai:latest
+
+# 数据备份
+tar -czf backup-$(date +%Y%m%d).tar.gz data/
+
+# 数据恢复
+tar -xzf backup-20240101.tar.gz
+```
+
+**方式二：Docker Volume**
+```bash
+# 创建命名卷
+docker volume create design_ai_data
+
+# 使用命名卷
+docker run -d \
+  --name design-ai \
+  -p 8080:8080 \
+  -v design_ai_data:/app/data \
+  design-ai:latest
+
 # 查看数据卷
 docker volume ls
 

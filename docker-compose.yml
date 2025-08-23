@@ -2,42 +2,30 @@ version: '3.8'
 
 services:
   design-ai:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "8080:8080"
-    volumes:
-      # 持久化数据库文件
-      - design_ai_data:/home/appuser/data
     environment:
       - GIN_MODE=release
-      - DATABASE_URL=./data/design_ai.db
+      - DATABASE_URL=/app/data/design_ai.db
       - PORT=8080
+      - TZ=Asia/Shanghai
+    volumes:
+      # 持久化数据库数据
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--timeout=3", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 10s
 
-  # 可选：Nginx反向代理
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # SSL证书目录（如果需要HTTPS）
-      # - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - design-ai
-    restart: unless-stopped
-    profiles:
-      - production
-
-volumes:
-  design_ai_data:
-    driver: local
+  # 可选：添加数据库管理工具
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - "8081:8080"
+  #   depends_on:
+  #     - design-ai

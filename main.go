@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -15,10 +16,19 @@ import (
 	"github.com/samber/lo"
 )
 
+// 版本信息，在构建时注入
+var (
+	version   = "dev"
+	buildTime = "unknown"
+)
+
 //go:embed templates/**/*.html
 var htmlFS embed.FS
 
 func main() {
+	// 输出版本信息
+	log.Printf("DesignAI version: %s, build time: %s", version, buildTime)
+	
 	// 初始化数据库
 	database.InitDatabase()
 	database.SeedData()
@@ -124,6 +134,21 @@ func main() {
 	// 静态资源
 	r.Static("/assets", "./assets")
 
-	log.Println("Server starting on :8080")
-	log.Fatal(r.Run(":8080"))
+	// 健康检查路由
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "ok", 
+			"message":   "Service is healthy",
+			"version":   version,
+			"buildTime": buildTime,
+		})
+	})
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Server starting on :%s", port)
+	log.Fatal(r.Run(":" + port))
 }

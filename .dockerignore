@@ -1,32 +1,45 @@
-# Git
-.git
-.gitignore
+# 构建产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+design-ai
 
-# Documentation
-README.md
-LICENSE
+# 测试文件
+*_test.go
+*.test
 
-# Images
-img/
-
-# IDE
+# 开发工具
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# 版本控制
+.git/
+.gitignore
 
-# Build artifacts
-design-ai
-*.exe
+# 文档
+README.md
+*.md
+docs/
 
-# Database files (will be created in container)
-*.db
-
-# Temporary files
-*.tmp
+# 日志文件
 *.log
 
-# Go specific
-vendor/
+# 临时文件
+tmp/
+temp/
+
+# 数据文件（如果不需要打包到镜像中）
+data/
+*.db
+
+# Docker 相关
+Dockerfile*
+docker-compose*.yml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
