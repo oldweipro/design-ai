@@ -375,7 +375,30 @@ func GetMyPortfolios(c *gin.Context) {
 	dbQuery.Count(&total)
 
 	offset := (query.Page - 1) * query.PageSize
-	orderBy := query.SortBy + " " + query.Order
+
+	// Whitelist allowed sorting columns and ordering directions
+	allowedSortBy := map[string]bool{
+		"created_at": true,
+		"title":      true,
+		"category":   true,
+		"status":     true,
+		// Add any other allowed fields here, must match model/DB column names
+	}
+	allowedOrder := map[string]string{
+		"asc":  "ASC",
+		"ASC":  "ASC",
+		"desc": "DESC",
+		"DESC": "DESC",
+	}
+	sortBy := "created_at" // default field
+	order := "DESC"         // default order
+	if allowedSortBy[query.SortBy] {
+		sortBy = query.SortBy
+	}
+	if val, ok := allowedOrder[query.Order]; ok {
+		order = val
+	}
+	orderBy := sortBy + " " + order
 
 	err := dbQuery.Order(orderBy).Offset(offset).Limit(query.PageSize).Find(&portfolios).Error
 	if err != nil {
