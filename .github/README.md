@@ -65,8 +65,8 @@ git push origin v1.0.0
    - design-ai-v1.0.0-windows-amd64.zip
 
 2. **Docker镜像**:
-   - ghcr.io/your-org/design-ai:v1.0.0 (GitHub Container Registry)
-   - your-dockerhub/design-ai:v1.0.0 (如果配置了Docker Hub)
+   - ghcr.io/oldweipro/design-ai:v1.0.0 (GitHub Container Registry)
+   - oldweipro/design-ai:v1.0.0 (如果配置了Docker Hub)
 
 3. **自动生成的Release Notes**包含:
    - 下载链接
@@ -124,7 +124,7 @@ go tool cover -html=coverage.out
 ### 调试技巧
 ```bash
 # 查看GitHub Actions运行日志
-# 访问: https://github.com/your-org/design-ai/actions
+# 访问: https://github.com/oldweipro/design-ai/actions
 
 # 本地模拟CI环境
 act -j test  # 需要安装act工具

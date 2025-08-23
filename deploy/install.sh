@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DesignAI 自动部署脚本
-# 用法: curl -fsSL https://raw.githubusercontent.com/your-org/design-ai/main/deploy/install.sh | bash
+# 用法: curl -fsSL https://raw.githubusercontent.com/oldweipro/design-ai/main/deploy/install.sh | bash
 
 set -e
 
@@ -83,8 +83,8 @@ download_configs() {
     cd "$INSTALL_DIR"
     
     # 下载生产环境配置
-    curl -fsSL -o docker-compose.prod.yml https://raw.githubusercontent.com/your-org/design-ai/main/docker-compose.prod.yml
-    curl -fsSL -o nginx.prod.conf https://raw.githubusercontent.com/your-org/design-ai/main/nginx.prod.conf
+    curl -fsSL -o docker-compose.prod.yml https://raw.githubusercontent.com/oldweipro/design-ai/main/docker-compose.prod.yml
+    curl -fsSL -o nginx.prod.conf https://raw.githubusercontent.com/oldweipro/design-ai/main/nginx.prod.conf
     
     log_success "配置文件下载完成"
 }

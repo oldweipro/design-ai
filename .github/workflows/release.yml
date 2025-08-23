@@ -61,13 +61,33 @@ jobs:
             -o "${OUTPUT_DIR}/${BINARY_NAME}" \
             .
           
-          # 创建压缩包
-          cd dist
-          if [ "$GOOS" = "windows" ]; then
-            zip -r "design-ai-${{ steps.version.outputs.VERSION }}-${GOOS}-${GOARCH}.zip" "${GOOS}-${GOARCH}/"
-          else
-            tar -czf "design-ai-${{ steps.version.outputs.VERSION }}-${GOOS}-${GOARCH}.tar.gz" "${GOOS}-${GOARCH}/"
+          # 验证二进制文件是否创建成功
+          if [ ! -f "${OUTPUT_DIR}/${BINARY_NAME}" ]; then
+            echo "❌ 构建失败：二进制文件不存在"
+            exit 1
           fi
+          
+          echo "✅ 构建成功：${OUTPUT_DIR}/${BINARY_NAME}"
+          ls -la "${OUTPUT_DIR}/"
+
+      - name: Create archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          cd dist
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          
+          if [ "$GOOS" = "windows" ]; then
+            zip -r "design-ai-${VERSION}-${GOOS}-${GOARCH}.zip" "${GOOS}-${GOARCH}/"
+            echo "✅ 创建压缩包：design-ai-${VERSION}-${GOOS}-${GOARCH}.zip"
+          else
+            tar -czf "design-ai-${VERSION}-${GOOS}-${GOARCH}.tar.gz" "${GOOS}-${GOARCH}/"
+            echo "✅ 创建压缩包：design-ai-${VERSION}-${GOOS}-${GOARCH}.tar.gz"
+          fi
+          
+          # 列出创建的文件
+          ls -la *.{tar.gz,zip} 2>/dev/null || echo "检查压缩包文件："
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -75,6 +95,7 @@ jobs:
           name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*.{tar.gz,zip}
           retention-days: 1
+          if-no-files-found: error
 
   # 构建和推送Docker镜像
   build-docker:
@@ -94,14 +115,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # 可选：Docker Hub 登录
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
 
-      - name: Extract metadata for GitHub Container Registry
+      - name: Extract metadata for GHCR
         id: meta-ghcr
         uses: docker/metadata-action@v5
         with:
@@ -122,9 +144,9 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
 
-      - name: Build and push to GitHub Container Registry
+      - name: Build and push to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -136,7 +158,6 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ github.ref_name }}
-            BUILD_TIME=${{ fromJSON(steps.meta-ghcr.outputs.json).labels['org.opencontainers.image.created'] }}
 
       - name: Build and push to Docker Hub
         uses: docker/build-push-action@v5
@@ -150,8 +171,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ github.ref_name }}
-            BUILD_TIME=${{ fromJSON(steps.meta-hub.outputs.json).labels['org.opencontainers.image.created'] }}
-        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
 
   # 创建GitHub Release
   release:
@@ -170,6 +190,12 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: List downloaded files
+        run: |
+          echo "📁 下载的构建产物："
+          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" | sort
+          ls -la artifacts/
+
       - name: Generate changelog
         id: changelog
         run: |
@@ -177,13 +203,15 @@ jobs:
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "CHANGELOG=首次发布" >> $GITHUB_OUTPUT
+            echo "CHANGELOG=首次发布 🎉" >> $GITHUB_OUTPUT
           else
-            # 生成变更日志
+            echo "📝 生成从 $PREVIOUS_TAG 到 ${{ github.ref_name }} 的变更日志"
             CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
-            echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGELOG" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            {
+              echo "CHANGELOG<<EOF"
+              echo "$CHANGELOG"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
           fi
 
       - name: Get version
@@ -191,53 +219,56 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.VERSION }}
           name: Release ${{ steps.version.outputs.VERSION }}
           body: |
             ## 🚀 Design AI ${{ steps.version.outputs.VERSION }}
             
-            ### 📦 下载
+            ### 📦 二进制下载
             
-            选择适合你系统的二进制文件：
+            选择适合你系统的版本：
             - **Linux (x64)**: design-ai-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
             - **Linux (ARM64)**: design-ai-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
             - **macOS (Intel)**: design-ai-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
             - **macOS (Apple Silicon)**: design-ai-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
             - **Windows (x64)**: design-ai-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
             
-            ### 🐳 Docker镜像
+            ### 🐳 Docker 镜像
             
             ```bash
-            # 从GitHub容器注册表拉取
+            # 从 GitHub Container Registry 拉取
             docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
             
-            # 或从Docker Hub拉取（如果配置了）
-            # docker pull your-dockerhub-username/design-ai:${{ steps.version.outputs.VERSION }}
+            # 运行容器
+            docker run -d --name design-ai -p 8080:8080 ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
             ```
             
-            ### 📋 变更日志
+            ### 📋 更新内容
             
             ${{ steps.changelog.outputs.CHANGELOG }}
             
-            ### 🔧 安装说明
+            ### 🔧 快速开始
             
             #### 二进制安装
-            1. 下载对应平台的压缩包
-            2. 解压到目标目录
-            3. 运行 `./design-ai` (Linux/macOS) 或 `design-ai.exe` (Windows)
+            ```bash
+            # Linux/macOS
+            wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.VERSION }}/design-ai-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+            tar -xzf design-ai-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+            ./linux-amd64/design-ai
+            ```
             
-            #### Docker运行
+            #### Docker 运行
             ```bash
             docker run -d \
               --name design-ai \
               -p 8080:8080 \
-              -v $(pwd)/data:/app/data \
+              -v $(pwd):/app \
               ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
             ```
             
-            访问 http://localhost:8080 开始使用！
+            🌐 访问 http://localhost:8080 开始使用！
           files: artifacts/*
           draft: false
           prerelease: false

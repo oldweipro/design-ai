@@ -524,10 +524,10 @@ JWT_SECRET=你的JWT签名密钥
 
 ```bash
 # 下载并运行部署脚本
-curl -fsSL https://raw.githubusercontent.com/your-org/design-ai/main/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oldweipro/design-ai/main/deploy/install.sh | bash
 
 # 或者手动部署
-git clone https://github.com/your-org/design-ai.git
+git clone https://github.com/oldweipro/design-ai.git
 cd design-ai
 chmod +x deploy/install.sh
 ./deploy/install.sh
