@@ -1,0 +1,68 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/your-org/design-ai
+  
+  golint:
+    min-confidence: 0.8
+  
+  gocyclo:
+    min-complexity: 15
+  
+  maligned:
+    suggest-new: true
+  
+  dupl:
+    threshold: 100
+  
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+linters:
+  enable:
+    - goimports
+    - golint
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - structcheck
+    - varcheck
+    - ineffassign
+    - deadcode
+    - typecheck
+    - gocyclo
+    - gofmt
+    - misspell
+    - goconst
+    - unparam
+    - nakedret
+    - prealloc
+    - scopelint
+  
+  disable:
+    - maligned
+    - lll
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+    - path: database/seed\.go
+      linters:
+        - errcheck
+  
+  exclude-use-default: false
+  max-same-issues: 0
+  new: false

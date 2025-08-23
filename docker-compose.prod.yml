@@ -1,0 +1,93 @@
+# 生产环境Docker Compose配置
+version: '3.8'
+
+services:
+  design-ai:
+    image: ${DOCKER_USERNAME:-designai}/design-ai:latest
+    container_name: design-ai-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"  # 只绑定到本地，通过Nginx代理
+    volumes:
+      - design_ai_prod_data:/home/appuser/data
+      - ./logs:/home/appuser/logs
+    environment:
+      - GIN_MODE=release
+      - DATABASE_URL=./data/design_ai.db
+      - PORT=8080
+      - JWT_SECRET=${JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    container_name: design-ai-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - design-ai
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 可选：日志聚合
+  loki:
+    image: grafana/loki:latest
+    container_name: design-ai-loki
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    profiles:
+      - monitoring
+
+  # 可选：监控面板
+  grafana:
+    image: grafana/grafana:latest
+    container_name: design-ai-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    profiles:
+      - monitoring
+
+volumes:
+  design_ai_prod_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  default:
+    name: design-ai-network
