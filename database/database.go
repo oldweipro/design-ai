@@ -15,7 +15,7 @@ var DB *gorm.DB
 
 func InitDatabase() {
 	dbPath := getDBPath()
-	
+
 	// 确保数据库目录存在
 	if err := ensureDBDir(dbPath); err != nil {
 		log.Fatal("Failed to create database directory:", err)

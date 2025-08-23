@@ -34,7 +34,6 @@ linters:
     - unparam      # 禁用未使用参数检查
     - nakedret     # 禁用naked return检查
     - prealloc     # 禁用预分配检查
-    - exportloopref # 已弃用的linter
     - lll          # 行长度限制
 
 issues:

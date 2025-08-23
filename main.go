@@ -28,7 +28,7 @@ var htmlFS embed.FS
 func main() {
 	// 输出版本信息
 	log.Printf("DesignAI version: %s, build time: %s", version, buildTime)
-	
+
 	// 初始化数据库
 	database.InitDatabase()
 	database.SeedData()
@@ -137,7 +137,7 @@ func main() {
 	// 健康检查路由
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status":    "ok", 
+			"status":    "ok",
 			"message":   "Service is healthy",
 			"version":   version,
 			"buildTime": buildTime,

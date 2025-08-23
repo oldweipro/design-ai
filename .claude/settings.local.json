@@ -14,7 +14,12 @@
       "Bash(rm:*)",
       "Bash(taskkill:*)",
       "Bash(git add:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(go install:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(go fmt:*)"
     ],
     "deny": []
   }
