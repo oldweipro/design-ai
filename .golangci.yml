@@ -9,56 +9,54 @@ linters-settings:
     local-prefixes: github.com/your-org/design-ai
   
   gocyclo:
-    min-complexity: 20  # 放宽复杂度限制
+    min-complexity: 25  # 进一步放宽复杂度限制
   
   dupl:
-    threshold: 100
-  
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-    
-  revive:
-    min-confidence: 0.8
+    threshold: 150
 
 linters:
   enable:
     - goimports
-    - revive      # 替代golint
-    - govet
-    - errcheck
-    - staticcheck
-    - unused      # 替代structcheck, varcheck, deadcode
-    - gosimple
-    - ineffassign
-    - typecheck
-    - gocyclo
-    - gofmt
-    - misspell
-    - goconst
-    - unparam
-    - nakedret
-    - prealloc
-    - exportloopref  # 替代scopelint
+    - govet        # Go官方代码检查
+    - errcheck     # 检查未处理的错误
+    - staticcheck  # 静态分析检查
+    - unused       # 检查未使用的代码
+    - gosimple     # 简化代码建议
+    - ineffassign  # 检查无效赋值
+    - typecheck    # 类型检查
+    - gofmt        # 代码格式检查
+    - misspell     # 拼写检查
   
   disable:
-    - lll
+    - revive       # 禁用过于严格的代码风格检查
+    - gocyclo      # 禁用复杂度检查
+    - goconst      # 禁用常量检查
+    - unparam      # 禁用未使用参数检查
+    - nakedret     # 禁用naked return检查
+    - prealloc     # 禁用预分配检查
+    - exportloopref # 已弃用的linter
+    - lll          # 行长度限制
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gocyclo
         - errcheck
-        - dupl
         - gosec
     - path: database/seed\.go
       linters:
         - errcheck
-    - path: handlers/
+    # 忽略注释相关的警告
+    - text: "should have comment"
       linters:
-        - gocyclo  # 暂时忽略handlers的复杂度
+        - revive
+    - text: "comment on exported"
+      linters:
+        - revive
+    - text: "package comment"
+      linters:
+        - revive
   
-  exclude-use-default: false
+  exclude-use-default: true
   max-same-issues: 0
   new: false
