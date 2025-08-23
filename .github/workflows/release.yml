@@ -202,9 +202,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check Docker Hub credentials
+        id: docker_check
+        run: |
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "docker_hub_available=true" >> $GITHUB_OUTPUT
+            echo "docker_image=${{ secrets.DOCKER_USERNAME }}/${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
+          else
+            echo "docker_hub_available=false" >> $GITHUB_OUTPUT
+            echo "docker_image=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Login to Docker Hub
+        if: steps.docker_check.outputs.docker_hub_available == 'true'
         uses: docker/login-action@v3
-        if: ${{ secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD }}
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -215,7 +226,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ secrets.DOCKER_USERNAME && format('{0}/{1}', secrets.DOCKER_USERNAME, env.APP_NAME) || '' }}
+            ${{ steps.docker_check.outputs.docker_image }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -261,6 +272,17 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Check Docker Hub configuration
+        id: docker_info
+        run: |
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "docker_configured=true" >> $GITHUB_OUTPUT
+            echo "docker_pull_cmd=docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.APP_NAME }}:${{ needs.prepare.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "docker_configured=false" >> $GITHUB_OUTPUT
+            echo "docker_pull_cmd=# Docker Hub 未配置，请使用 GitHub Container Registry" >> $GITHUB_OUTPUT
+          fi
 
       - name: Merge checksums
         run: |
@@ -332,7 +354,7 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.version }}
             
             # 从 Docker Hub (如果已配置)
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.APP_NAME }}:${{ needs.prepare.outputs.version }}
+            ${{ steps.docker_info.outputs.docker_pull_cmd }}
             
             # 运行容器
             docker run -d \
