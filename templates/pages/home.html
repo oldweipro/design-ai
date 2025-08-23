@@ -681,11 +681,14 @@
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             border-radius: 20px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 500px;
+            padding: 1rem;
+            width: 95vw;
+            height: 95vh;
+            max-width: none;
             border: 1px solid var(--border-color);
             animation: modalSlideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         @keyframes modalSlideIn {
@@ -789,8 +792,8 @@
 
         .close-btn {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 0.5rem;
+            right: 0.5rem;
             background: none;
             border: none;
             color: var(--text-secondary);
@@ -803,6 +806,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            z-index: 10;
         }
 
         .close-btn:hover {
@@ -1318,7 +1322,7 @@
             <!-- 未登录时显示的按钮 -->
             <div class="auth-buttons" id="authButtons">
                 <a href="/auth" class="login-btn">登录</a>
-                <button class="upload-btn" onclick="openUploadModal()">上传作品</button>
+                <a href="/dashboard" class="upload-btn">上传作品</a>
             </div>
             
             <!-- 已登录时显示的用户菜单 -->
@@ -1540,54 +1544,10 @@
     </button>
 </footer>
 
-<!-- 上传模态框 -->
-<div class="modal" id="uploadModal">
-    <div class="modal-content">
-        <button class="close-btn" onclick="closeUploadModal()">&times;</button>
-        <h2 class="modal-title">🚀 上传您的设计作品</h2>
-        <form id="uploadForm">
-            <div class="form-group">
-                <label class="form-label">作品标题</label>
-                <input class="form-input" placeholder="输入作品标题..." required type="text">
-            </div>
-            <div class="form-group">
-                <label class="form-label">设计师名称</label>
-                <input class="form-input" placeholder="输入您的名称..." required type="text">
-            </div>
-            <div class="form-group">
-                <label class="form-label">作品描述</label>
-                <input class="form-input" placeholder="描述您的设计理念..." required type="text">
-            </div>
-            <div class="form-group">
-                <label class="form-label">AI辅助程度</label>
-                <select class="form-input" required>
-                    <option value="">选择AI参与程度</option>
-                    <option value="no-ai">完全手工设计</option>
-                    <option value="ai-assisted">AI辅助设计</option>
-                    <option value="ai-generated">AI完全生成</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">作品标签</label>
-                <input class="form-input" placeholder="AI设计,未来科技,3D渲染..." required type="text">
-            </div>
-            <div class="form-group">
-                <label class="form-label">上传图片</label>
-                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                    <input accept="image/*" id="fileInput" style="display: none;" type="file">
-                    📁 点击选择图片文件或拖拽到此处
-                </div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" type="submit">🚀 发布作品</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- 详情模态框 -->
 <div class="modal" id="detailModal">
-    <div class="modal-content detail-modal-content">
+    <div class="modal-content">
         <button class="close-btn" onclick="closeDetailModal()">&times;</button>
         <div id="detailContent">
             <!-- 详情内容将通过JavaScript填充 -->
@@ -1872,7 +1832,7 @@
 
                 portfolioItem.innerHTML = `
                         <div class="portfolio-image">
-                            ${item.image || '🎨 ' + item.title}
+                            ${item.imageUrl || '🎨 ' + item.title}
                             <div class="ai-badge">
                                 ${item.aiLevel === 'AI完全生成' ? '🤖 AI生成' :
                     item.aiLevel === 'AI辅助设计' ? '🧠 AI辅助' : '✋ 手工设计'}
@@ -1962,61 +1922,53 @@
         });
     }
 
-    // 上传模态框
-    function openUploadModal() {
-        // 检查是否已登录
-        if (!checkAuthStatus()) {
-            showErrorMessage('请先登录后再上传作品');
-            setTimeout(() => {
-                window.location.href = '/auth';
-            }, 2000);
-            return;
-        }
-        
-        document.getElementById('uploadModal').style.display = 'block';
-    }
-
-    function closeUploadModal() {
-        document.getElementById('uploadModal').style.display = 'none';
-    }
 
     // 详情模态框
     function showDetail(item) {
         const detailContent = document.getElementById('detailContent');
         const tags = Array.isArray(item.tags) ? item.tags : [];
-        const isOwnPortfolio = currentUser && item.userId === currentUser.id;
         const isAuthenticated = !!currentUser;
         
         detailContent.innerHTML = `
-                <div class="detail-image" style="background: var(--ai-gradient); border-radius: 15px; margin-bottom: 2rem; height: 300px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; position: relative;">
-                    ${item.image || '🎨 ' + item.title}
-                    ${isOwnPortfolio ? `<div class="owner-badge" style="position: absolute; top: 1rem; left: 1rem; background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600;">我的作品</div>` : ''}
-                </div>
-                <div class="detail-info" style="color: var(--text-primary);">
-                    <h2 class="detail-title" style="font-size: 2rem; margin-bottom: 1rem;">${item.title}</h2>
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; color: var(--text-secondary);">
-                        <div class="author-avatar" style="width: 40px; height: 40px; font-size: 1rem;">${item.authorInitial || item.author.charAt(0)}</div>
-                        <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">${item.author}</div>
-                            <div style="font-size: 0.9rem;">${item.aiLevel}</div>
+                <div style="display: flex; flex-direction: column; height: 100%; width: 100%; position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 0.5rem;">
+                    <!-- 顶部简化信息条 -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0 1rem 0; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; min-height: 60px;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="author-avatar" style="width: 36px; height: 36px; font-size: 0.9rem;">${item.authorInitial || item.author.charAt(0)}</div>
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-primary);">${item.title}</h3>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary);">by ${item.author} • ${item.aiLevel}</div>
+                                ${item.description ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.8;">${item.description}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                            <span>👁️ ${item.views || 0}</span>
+                            <span onclick="event.stopPropagation(); ${isAuthenticated ? `likePortfolio('${item.id}')` : 'promptLogin()'}" style="cursor: pointer;">❤️ ${item.likes || 0}</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
-                        <span>👁️ ${item.views || 0} 浏览</span>
-                        <span>❤️ ${item.likes || 0} 喜欢</span>
+                    
+                    <!-- 主要内容：iframe预览 -->
+                    <div style="flex: 1; width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow-medium); min-height: 0;">
+                        <iframe id="previewContent" 
+                            style="width: 100%; height: 100%; border: none; background: var(--bg-secondary); display: block;"
+                            src="data:text/html;charset=utf-8,${encodeURIComponent(item.content)}">
+                        </iframe>
                     </div>
-                    <p class="detail-description" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">${item.description || '暂无描述'}</p>
-                    ${item.content ? `<div class="detail-content" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-primary); background: var(--bg-accent); padding: 1.5rem; border-radius: 12px;"><h3 style="margin-bottom: 1rem;">详细介绍</h3><p>${item.content}</p></div>` : ''}
-                    <div class="portfolio-tags">
-                        ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-                    </div>
-                    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                        ${isAuthenticated ? 
-                            `<button class="btn btn-primary" onclick="likePortfolio('${item.id}')" style="background: var(--ai-gradient);">💖 点赞</button>` :
-                            `<button class="btn btn-primary" onclick="promptLogin()" style="background: var(--ai-gradient);">💖 登录后点赞</button>`
-                        }
-                        <button class="btn btn-secondary">📥 下载</button>
-                        <button class="btn btn-secondary">📤 分享</button>
+                    
+                    <!-- 底部操作栏 -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 0; margin-top: 0.5rem; flex-shrink: 0; height: 60px;">
+                        <div class="portfolio-tags" style="display: flex; gap: 0.5rem; flex-wrap: wrap; flex: 1;">
+                            ${tags.slice(0, 4).map(tag => `<span class="tag" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">${tag}</span>`).join('')}
+                            ${tags.length > 4 ? `<span class="tag" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">+${tags.length - 4}</span>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; margin-left: 1rem;">
+                            ${isAuthenticated ? 
+                                `<button class="btn btn-primary" onclick="likePortfolio('${item.id}')" style="background: var(--ai-gradient); padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">💖 点赞</button>` :
+                                `<button class="btn btn-primary" onclick="promptLogin()" style="background: var(--ai-gradient); padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">💖 登录后点赞</button>`
+                            }
+                            <button class="btn btn-secondary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📥 下载</button>
+                            <button class="btn btn-secondary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📤 分享</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2027,70 +1979,6 @@
         document.getElementById('detailModal').style.display = 'none';
     }
 
-    // 上传表单处理
-    function initUploadForm() {
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const title = this.querySelector('input[placeholder="输入作品标题..."]').value;
-            const author = this.querySelector('input[placeholder="输入您的名称..."]').value;
-            const description = this.querySelector('input[placeholder="描述您的设计理念..."]').value;
-            const aiLevelSelect = this.querySelector('select').value;
-            const tagsInput = this.querySelector('input[placeholder="AI设计,未来科技,3D渲染..."]').value;
-            const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-
-            // 映射AI级别值
-            let aiLevel;
-            switch(aiLevelSelect) {
-                case 'no-ai':
-                    aiLevel = '手工设计';
-                    break;
-                case 'ai-assisted':
-                    aiLevel = 'AI辅助设计';
-                    break;
-                case 'ai-generated':
-                    aiLevel = 'AI完全生成';
-                    break;
-                default:
-                    aiLevel = 'AI辅助设计';
-            }
-
-            // 确定分类
-            let category = 'ai';
-            if (tags.some(tag => tag.includes('UI') || tag.includes('界面'))) {
-                category = 'ui';
-            } else if (tags.some(tag => tag.includes('移动') || tag.includes('APP'))) {
-                category = 'mobile';
-            } else if (tags.some(tag => tag.includes('网页') || tag.includes('网站'))) {
-                category = 'web';
-            } else if (tags.some(tag => tag.includes('品牌') || tag.includes('logo'))) {
-                category = 'brand';
-            } else if (tags.some(tag => tag.includes('3D') || tag.includes('渲染'))) {
-                category = '3d';
-            }
-
-            const newPortfolio = {
-                title,
-                author,
-                description,
-                category,
-                tags,
-                imageUrl: '', // 暂时为空，可以后续添加图片上传功能
-                aiLevel: aiLevel
-            };
-
-            try {
-                await createPortfolio(newPortfolio);
-                
-                // 关闭模态框并重置表单
-                closeUploadModal();
-                this.reset();
-                
-            } catch (error) {
-                console.error('Upload failed:', error);
-            }
-        });
-    }
 
     // 成功消息提示
     function showSuccessMessage(message) {
@@ -2150,13 +2038,6 @@
         }
     });
 
-    // 文件上传处理
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            document.querySelector('.file-upload').innerHTML = `✅ 已选择文件: ${file.name}`;
-        }
-    });
 
     // 导航栏滚动效果
     window.addEventListener('scroll', function() {
@@ -2191,7 +2072,6 @@
             initParticles();
             initFilterButtons();
             initSearchInput();
-            initUploadForm();
             initBackToTop();
             
             // 检查认证状态
@@ -2210,11 +2090,10 @@
                 }
                 // ESC 关闭模态框
                 if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal').forEach(modal => {
-                        if (modal.style.display === 'block') {
-                            modal.style.display = 'none';
-                        }
-                    });
+                    const detailModal = document.getElementById('detailModal');
+                    if (detailModal && detailModal.style.display === 'block') {
+                        detailModal.style.display = 'none';
+                    }
                 }
             });
 
