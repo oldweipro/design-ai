@@ -99,34 +99,59 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract metadata for GitHub Container Registry
+        id: meta-ghcr
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ secrets.DOCKER_USERNAME != '' && format('{0}/design-ai', secrets.DOCKER_USERNAME) || '' }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
-      - name: Build and push Docker image
+      - name: Extract metadata for Docker Hub
+        id: meta-hub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/design-ai
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
+
+      - name: Build and push to GitHub Container Registry
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-ghcr.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ github.ref_name }}
-            BUILD_TIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_TIME=${{ fromJSON(steps.meta-ghcr.outputs.json).labels['org.opencontainers.image.created'] }}
+
+      - name: Build and push to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-hub.outputs.tags }}
+          labels: ${{ steps.meta-hub.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_TIME=${{ fromJSON(steps.meta-hub.outputs.json).labels['org.opencontainers.image.created'] }}
+        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD
 
   # 创建GitHub Release
   release:

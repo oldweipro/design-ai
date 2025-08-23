@@ -19,7 +19,10 @@
       "Bash(git push:*)",
       "Bash(go install:*)",
       "Bash(golangci-lint run:*)",
-      "Bash(go fmt:*)"
+      "Bash(go fmt:*)",
+      "Bash(git tag:*)",
+      "Bash(python3:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
