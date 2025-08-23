@@ -64,9 +64,27 @@ jobs:
           go tool cover -func=coverage.out
 
       - name: Run security scan
-        uses: securecodewarrior/github-action-gosec@master
+        uses: golang/govulncheck-action@v1
         with:
-          args: '-no-fail -fmt sarif -out gosec.sarif ./...'
+          go-version-input: ${{ env.GO_VERSION }}
+          go-package: ./...
+        continue-on-error: true
+
+      - name: Run additional security checks
+        run: |
+          echo "🔒 Running additional security checks..."
+          
+          # 安装并运行 gosec (如果需要)
+          if command -v gosec >/dev/null 2>&1; then
+            echo "gosec already installed"
+          else
+            echo "Installing gosec..."
+            go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          fi
+          
+          # 运行 gosec 扫描
+          echo "Running gosec scan..."
+          gosec -fmt text -stdout -verbose=text ./... || echo "⚠️ Security scan completed with warnings"
         continue-on-error: true
 
   # 构建多平台二进制文件
