@@ -58,7 +58,10 @@ func CreatePortfolioVersion(c *gin.Context) {
 	}
 
 	// 生成缩略图
-	thumbnail := services.ThumbnailSvc.GenerateHTMLThumbnail(req.HTMLContent)
+	thumbnail := ""
+	if req.HTMLContent != "" {
+		thumbnail = services.ThumbnailSvc.GenerateHTMLThumbnail(req.HTMLContent)
+	}
 
 	// 创建新版本
 	version := models.PortfolioVersion{
@@ -68,8 +71,8 @@ func CreatePortfolioVersion(c *gin.Context) {
 		Description: req.Description,
 		HTMLContent: req.HTMLContent,
 		Thumbnail:   thumbnail,
+		IsActive:    req.IsActive != nil && *req.IsActive,
 		ChangeLog:   req.ChangeLog,
-		IsActive:    false, // 默认不激活
 	}
 
 	if err := db.Create(&version).Error; err != nil {
@@ -267,12 +270,6 @@ func DeletePortfolioVersion(c *gin.Context) {
 	isAdmin := middleware.IsAdmin(c)
 	if !isAdmin && version.Portfolio.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
-		return
-	}
-
-	// 不允许删除激活的版本
-	if version.IsActive {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete active version"})
 		return
 	}
 

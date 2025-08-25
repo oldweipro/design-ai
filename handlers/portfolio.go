@@ -69,12 +69,10 @@ func buildPortfolioResponse(portfolio models.Portfolio) models.PortfolioResponse
 	if portfolio.ActiveVersion != nil {
 		activeVersion := portfolio.ActiveVersion.ToResponse()
 		response.ActiveVersion = &activeVersion
-		response.Thumbnail = portfolio.ActiveVersion.Thumbnail
 	} else if len(portfolio.Versions) > 0 {
 		// 如果没有明确的活跃版本，使用最新版本
 		latestVersion := portfolio.Versions[0].ToResponse()
 		response.ActiveVersion = &latestVersion
-		response.Thumbnail = portfolio.Versions[0].Thumbnail
 	}
 
 	return response
@@ -271,7 +269,6 @@ func CreatePortfolio(c *gin.Context) {
 		Title:         req.Title,
 		Author:        authorName, // 使用用户昵称作为作者
 		Description:   req.Description,
-		Content:       req.Content,
 		Category:      req.Category,
 		Tags:          string(tagsJSON),
 		ImageObjectID: req.ImageObjectID,
@@ -286,21 +283,54 @@ func CreatePortfolio(c *gin.Context) {
 			return err
 		}
 
-		// 如果提供了HTML内容，创建初始版本
-		if req.HTMLContent != "" {
-			version := models.PortfolioVersion{
-				PortfolioID: portfolio.ID,
-				Version:     "v1.0",
-				Title:       portfolio.Title,
-				Description: portfolio.Description,
-				HTMLContent: req.HTMLContent,
-				Thumbnail:   services.ThumbnailSvc.GenerateHTMLThumbnail(req.HTMLContent),
-				IsActive:    true, // 设为活跃版本
-				ChangeLog:   "初始版本",
+		// 创建版本
+		if len(req.Versions) > 0 {
+			var activeVersionCount int64
+			
+			// 统计活跃版本数量，确保只有一个活跃版本
+			for _, versionReq := range req.Versions {
+				if versionReq.IsActive {
+					activeVersionCount++
+				}
+			}
+			
+			// 如果没有活跃版本，默认第一个为活跃版本
+			if activeVersionCount == 0 && len(req.Versions) > 0 {
+				req.Versions[0].IsActive = true
+			} else if activeVersionCount > 1 {
+				// 如果有多个活跃版本，只保留第一个
+				for i := range req.Versions {
+					if req.Versions[i].IsActive {
+						if activeVersionCount > 1 {
+							req.Versions[i].IsActive = false
+							activeVersionCount--
+						}
+					}
+				}
 			}
 
-			if err := tx.Create(&version).Error; err != nil {
-				return err
+			// 创建版本
+			for _, versionReq := range req.Versions {
+				// 生成缩略图
+				thumbnail := ""
+				if versionReq.HTMLContent != "" {
+					thumbnail = services.ThumbnailSvc.GenerateHTMLThumbnail(versionReq.HTMLContent)
+				}
+
+				version := models.PortfolioVersion{
+					PortfolioID: portfolio.ID,
+					Version:     versionReq.Name,
+					Title:       versionReq.Title,
+					Description: versionReq.Description,
+					HTMLContent: versionReq.HTMLContent,
+					Thumbnail:   thumbnail,
+					IsActive:    versionReq.IsActive,
+					ChangeLog:   versionReq.ChangeLog,
+				}
+
+				if err := tx.Create(&version).Error; err != nil {
+					return err
+				}
 			}
 		}
 

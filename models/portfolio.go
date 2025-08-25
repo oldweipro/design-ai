@@ -65,14 +65,23 @@ type PortfolioResponse struct {
 }
 
 type CreatePortfolioRequest struct {
-	Title         string   `json:"title" binding:"required"`
-	Description   string   `json:"description"`
-	Content       string   `json:"content"`
-	HTMLContent   string   `json:"htmlContent"`
-	Category      string   `json:"category" binding:"required"`
-	Tags          []string `json:"tags"`
-	ImageObjectID string   `json:"imageObjectId"`
-	AILevel       string   `json:"aiLevel" binding:"required"`
+	Title         string                      `json:"title" binding:"required"`
+	Description   string                      `json:"description"`
+	Category      string                      `json:"category" binding:"required"`
+	Tags          []string                    `json:"tags"`
+	ImageObjectID string                      `json:"imageObjectId"`
+	AILevel       string                      `json:"aiLevel" binding:"required"`
+	Versions      []CreatePortfolioVersionReq `json:"versions"` // 版本信息
+}
+
+// CreatePortfolioVersionReq 创建作品时的版本请求
+type CreatePortfolioVersionReq struct {
+	Name        string `json:"name" binding:"required"`        // 版本名称，如 "v1.0"
+	Title       string `json:"title" binding:"required"`       // 版本标题
+	Description string `json:"description"`                    // 版本描述
+	HTMLContent string `json:"htmlContent" binding:"required"` // HTML内容
+	ChangeLog   string `json:"changeLog"`                      // 版本变更日志
+	IsActive    bool   `json:"isActive"`                       // 是否为活跃版本
 }
 
 type UpdatePortfolioRequest struct {

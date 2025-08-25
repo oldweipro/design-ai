@@ -425,7 +425,22 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">HTML内容</label>
+                            <label class="form-label">作品版本</label>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <select class="form-input" name="portfolioVersion" id="portfolioVersion" style="flex: 1;">
+                                    <option value="">选择或创建版本</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="showAddVersionDialog()">
+                                    <span>➕</span> 新版本
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteSelectedVersion()" id="deleteVersionBtn" style="display: none;">
+                                    <span>🗑️</span> 删除
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">HTML展示内容</label>
                             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                 <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
                                     <button type="button" onclick="toggleCodeEditor()" style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
@@ -435,16 +450,11 @@
                                         👁️ 预览
                                     </button>
                                 </div>
-                                <textarea class="form-input" name="htmlContent" id="htmlContentEditor" rows="12" placeholder="输入HTML代码..." style="font-family: 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 0.9rem; display: none;"></textarea>
+                                <textarea class="form-input" name="htmlContent" id="htmlContentEditor" rows="12" placeholder="输入HTML代码（用于前台展示）..." style="font-family: 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 0.9rem; display: none;"></textarea>
                                 <div id="htmlPreview" style="border: 1px solid var(--border-color); border-radius: 8px; min-height: 300px; background: white; display: none; overflow: auto;">
                                     <iframe id="previewFrame" style="width: 100%; height: 300px; border: none;"></iframe>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">作品内容</label>
-                            <textarea class="form-input" name="content" rows="8" placeholder="详细介绍您的设计理念、制作过程等..."></textarea>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
@@ -469,7 +479,7 @@
 
                         <div style="margin-top: 3rem; display: flex; gap: 1rem;">
                             <button type="button" class="btn btn-secondary" onclick="dashboardManager.showSection('my-portfolios')">取消</button>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" onclick="handleCreatePortfolio(event)">
                                 <span>💾</span>
                                 <span>保存作品</span>
                             </button>
@@ -861,7 +871,386 @@
                 pageTitle.textContent = titles[sectionName] || '仪表板';
             }
         }
+        
+        // 版本管理功能
+        let portfolioVersions = [];
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            
+            // 设置颜色
+            switch(type) {
+                case 'success':
+                    notification.style.backgroundColor = '#48bb78';
+                    break;
+                case 'error':
+                    notification.style.backgroundColor = '#f56565';
+                    break;
+                case 'warning':
+                    notification.style.backgroundColor = '#ed8936';
+                    break;
+                default:
+                    notification.style.backgroundColor = '#4299e1';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示添加版本对话框
+        function showAddVersionDialog() {
+            const dialog = document.getElementById('addVersionDialog');
+            const input = document.getElementById('versionNameInput');
+            
+            input.value = '';
+            dialog.classList.add('show');
+            
+            // 延迟聚焦，确保模态框完全显示后再聚焦
+            setTimeout(() => {
+                input.focus();
+            }, 100);
+        }
+        
+        // 确认添加版本
+        function confirmAddVersion() {
+            const input = document.getElementById('versionNameInput');
+            const dialog = document.getElementById('addVersionDialog');
+            const versionName = input.value.trim();
+            
+            if (versionName) {
+                dialog.classList.remove('show');
+                addPortfolioVersion(versionName);
+            } else {
+                showNotification('请输入版本名称', 'warning');
+                input.focus();
+            }
+        }
+        
+        // 取消添加版本
+        function cancelAddVersion() {
+            const dialog = document.getElementById('addVersionDialog');
+            dialog.classList.remove('show');
+        }
+        
+        // 添加作品版本
+        function addPortfolioVersion(versionName) {
+            // 检查版本名是否已存在
+            if (portfolioVersions.some(v => v.name === versionName)) {
+                showNotification('版本名称已存在，请使用其他名称', 'error');
+                return;
+            }
+            
+            // 添加新版本
+            const version = {
+                id: 'version_' + Date.now(),
+                name: versionName,
+                htmlContent: ''
+            };
+            
+            portfolioVersions.push(version);
+            updateVersionSelect();
+            
+            // 自动选择新版本
+            const versionSelect = document.getElementById('portfolioVersion');
+            versionSelect.value = version.id;
+            handleVersionChange();
+            
+            // 显示成功通知
+            showNotification(`版本 "${versionName}" 创建成功`, 'success');
+        }
+        
+        // 删除选中的版本
+        function deleteSelectedVersion() {
+            const versionSelect = document.getElementById('portfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            
+            if (!selectedVersionId) {
+                return;
+            }
+            
+            const versionIndex = portfolioVersions.findIndex(v => v.id === selectedVersionId);
+            if (versionIndex > -1) {
+                const versionName = portfolioVersions[versionIndex].name;
+                showDeleteConfirmDialog(versionName, () => {
+                    portfolioVersions.splice(versionIndex, 1);
+                    updateVersionSelect();
+                    
+                    // 清空HTML内容
+                    document.getElementById('htmlContentEditor').value = '';
+                    
+                    // 隐藏删除按钮
+                    document.getElementById('deleteVersionBtn').style.display = 'none';
+                });
+            }
+        }
+        
+        // 存储删除回调函数
+        let deleteCallback = null;
+        
+        // 显示删除确认对话框
+        function showDeleteConfirmDialog(versionName, onConfirm) {
+            const dialog = document.getElementById('deleteConfirmDialog');
+            const message = document.getElementById('deleteConfirmMessage');
+            
+            message.textContent = `确定要删除版本 "${versionName}" 吗？此操作无法撤销。`;
+            dialog.classList.add('show');
+            
+            // 存储回调函数
+            deleteCallback = onConfirm;
+        }
+        
+        // 确认删除
+        function confirmDelete() {
+            const dialog = document.getElementById('deleteConfirmDialog');
+            dialog.classList.remove('show');
+            
+            if (deleteCallback) {
+                deleteCallback();
+                deleteCallback = null;
+            }
+        }
+        
+        // 取消删除
+        function cancelDelete() {
+            const dialog = document.getElementById('deleteConfirmDialog');
+            dialog.classList.remove('show');
+            deleteCallback = null;
+        }
+        
+        // 更新版本选择器
+        function updateVersionSelect() {
+            const versionSelect = document.getElementById('portfolioVersion');
+            const currentValue = versionSelect.value;
+            
+            // 清空选项
+            versionSelect.innerHTML = '<option value="">选择或创建版本</option>';
+            
+            // 添加版本选项
+            portfolioVersions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version.id;
+                option.textContent = version.name;
+                versionSelect.appendChild(option);
+            });
+            
+            // 尝试恢复之前选中的值
+            if (currentValue && portfolioVersions.some(v => v.id === currentValue)) {
+                versionSelect.value = currentValue;
+            }
+        }
+        
+        // 处理版本选择变化
+        function handleVersionChange() {
+            const versionSelect = document.getElementById('portfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            const deleteBtn = document.getElementById('deleteVersionBtn');
+            
+            if (selectedVersionId) {
+                // 显示删除按钮
+                deleteBtn.style.display = 'inline-flex';
+                
+                // 查找选中的版本
+                const selectedVersion = portfolioVersions.find(v => v.id === selectedVersionId);
+                if (selectedVersion) {
+                    // 加载版本HTML内容到表单
+                    document.getElementById('htmlContentEditor').value = selectedVersion.htmlContent || '';
+                }
+            } else {
+                // 隐藏删除按钮
+                deleteBtn.style.display = 'none';
+                
+                // 清空HTML内容
+                document.getElementById('htmlContentEditor').value = '';
+            }
+        }
+        
+        // 保存当前版本内容
+        function saveCurrentVersionContent() {
+            const versionSelect = document.getElementById('portfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            
+            if (selectedVersionId) {
+                const selectedVersion = portfolioVersions.find(v => v.id === selectedVersionId);
+                if (selectedVersion) {
+                    selectedVersion.htmlContent = document.getElementById('htmlContentEditor').value;
+                }
+            }
+        }
+        
+        // 处理创建作品表单提交
+        function handleCreatePortfolio(event) {
+            event.preventDefault();
+            
+            const form = document.getElementById('createPortfolioForm');
+            const formData = new FormData(form);
+            
+            // 收集基本作品信息
+            const portfolioData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                imageUrl: formData.get('imageUrl'),
+                aiLevel: formData.get('aiLevel'),
+                tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag) : []
+            };
+            
+            // 收集版本信息
+            const versions = [];
+            portfolioVersions.forEach((version, index) => {
+                versions.push({
+                    name: version.name,
+                    title: version.name, // 使用版本名作为标题
+                    description: '',
+                    htmlContent: version.htmlContent || '<p>请添加HTML内容</p>',
+                    changeLog: index === 0 ? '初始版本' : '版本更新',
+                    isActive: index === 0 // 第一个版本为活跃版本
+                });
+            });
+            
+            // 如果没有版本，创建默认版本
+            if (versions.length === 0) {
+                const htmlContent = document.getElementById('htmlContentEditor').value;
+                if (htmlContent.trim()) {
+                    versions.push({
+                        name: 'v1.0',
+                        title: 'v1.0',
+                        description: '默认版本',
+                        htmlContent: htmlContent,
+                        changeLog: '初始版本',
+                        isActive: true
+                    });
+                }
+            }
+            
+            portfolioData.versions = versions;
+            
+            // 发送请求
+            showNotification('正在创建作品...', 'info');
+            
+            const apiClient = new ApiClient();
+            apiClient.request('/portfolios', {
+                method: 'POST',
+                body: JSON.stringify(portfolioData)
+            })
+            .then(result => {
+                if (result && !result.error) {
+                    showNotification('作品创建成功！', 'success');
+                    
+                    // 清空表单和版本数据
+                    form.reset();
+                    portfolioVersions = [];
+                    updateVersionSelect();
+                    
+                    // 跳转到我的作品页面
+                    setTimeout(() => {
+                        dashboardManager.showSection('my-portfolios');
+                    }, 1500);
+                } else {
+                    showNotification(`创建失败: ${result?.error || '未知错误'}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('创建作品失败:', error);
+                showNotification('创建作品失败，请稍后重试', 'error');
+            });
+        }
+        
+        // 初始化版本选择器事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const versionSelect = document.getElementById('portfolioVersion');
+            if (versionSelect) {
+                versionSelect.addEventListener('change', handleVersionChange);
+            }
+            
+            // 监听HTML内容变化，自动保存到当前版本
+            const htmlTextarea = document.getElementById('htmlContentEditor');
+            
+            if (htmlTextarea) {
+                htmlTextarea.addEventListener('blur', saveCurrentVersionContent);
+            }
+        });
     </script>
+
+    <!-- 添加版本对话框 -->
+    <div id="addVersionDialog" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">新建版本</h3>
+            </div>
+            <div style="padding: 1.5rem 0;">
+                <div class="form-group">
+                    <label class="form-label">版本名称</label>
+                    <input type="text" id="versionNameInput" class="form-input" placeholder="如：v1.0, v2.0, beta等" maxlength="20" onkeypress="if(event.key==='Enter') confirmAddVersion()">
+                    <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;">建议使用语义化版本号</small>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button onclick="cancelAddVersion()" class="btn btn-secondary">
+                        <span>❌</span>
+                        <span>取消</span>
+                    </button>
+                    <button onclick="confirmAddVersion()" class="btn btn-primary">
+                        <span>➕</span>
+                        <span>创建版本</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div id="deleteConfirmDialog" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">确认删除</h3>
+            </div>
+            <div style="padding: 1.5rem 0;">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 3rem; color: #f56565; margin-bottom: 1rem;">⚠️</div>
+                    <p id="deleteConfirmMessage" style="margin: 0; color: var(--text-primary); font-size: 1.1rem;"></p>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button onclick="cancelDelete()" class="btn btn-secondary">
+                        <span>❌</span>
+                        <span>取消</span>
+                    </button>
+                    <button onclick="confirmDelete()" class="btn btn-danger">
+                        <span>🗑️</span>
+                        <span>确定删除</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 版本管理模态框 -->
     <div id="versionModal" class="modal">

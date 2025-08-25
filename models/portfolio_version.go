@@ -13,7 +13,10 @@ type PortfolioVersion struct {
 	PortfolioID string    `json:"portfolioId" gorm:"type:char(36);index;not null"` // 关联作品
 	Version     string    `json:"version" gorm:"size:20;not null"`                 // 版本号，如 "v1.0", "v1.1"
 	Title       string    `json:"title" gorm:"size:255;not null"`                  // 版本标题
+	Description string    `json:"description" gorm:"type:text"`                    // 版本描述
 	HTMLContent string    `json:"htmlContent" gorm:"type:longtext;not null"`       // HTML内容
+	Thumbnail   string    `json:"thumbnail" gorm:"type:text"`                      // 缩略图URL
+	IsActive    bool      `json:"isActive" gorm:"default:false;index"`             // 是否为活跃版本
 	ChangeLog   string    `json:"changeLog" gorm:"type:text"`                      // 版本变更日志
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -43,6 +46,7 @@ type CreateVersionRequest struct {
 	Description string `json:"description"`
 	HTMLContent string `json:"htmlContent" binding:"required"`
 	ChangeLog   string `json:"changeLog"`
+	IsActive    *bool  `json:"isActive"` // 使用指针以区分false和未设置
 }
 
 // UpdateVersionRequest 更新版本请求
@@ -61,7 +65,10 @@ func (pv *PortfolioVersion) ToResponse() PortfolioVersionResponse {
 		PortfolioID: pv.PortfolioID,
 		Version:     pv.Version,
 		Title:       pv.Title,
+		Description: pv.Description,
 		HTMLContent: pv.HTMLContent,
+		Thumbnail:   pv.Thumbnail,
+		IsActive:    pv.IsActive,
 		ChangeLog:   pv.ChangeLog,
 		CreatedAt:   pv.CreatedAt,
 		UpdatedAt:   pv.UpdatedAt,
