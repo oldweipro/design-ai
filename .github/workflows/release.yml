@@ -63,6 +63,22 @@ jobs:
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run Go vulnerability check
+        run: |
+          echo "🔍 Scanning Go dependencies for vulnerabilities..."
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
   # 构建多平台二进制文件
   build-binaries:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
@@ -94,14 +110,16 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Cache Go modules
+      - name: Cache Go modules and build
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.goos }}-${{ matrix.goarch }}-
+            ${{ runner.os }}-go-${{ matrix.goos }}-
             ${{ runner.os }}-go-
 
       - name: Build binary
@@ -254,6 +272,20 @@ jobs:
             BUILD_TIME=${{ steps.time.outputs.timestamp }}
             GIT_COMMIT=${{ github.sha }}
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.clean_version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
   # 创建 GitHub Release
   release:
     name: Create GitHub Release
@@ -276,7 +308,7 @@ jobs:
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
             echo "docker_configured=true" >> $GITHUB_OUTPUT
-            echo "docker_pull_cmd=docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.APP_NAME }}:${{ needs.prepare.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "docker_pull_cmd=docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.APP_NAME }}:${{ needs.prepare.outputs.clean_version }}" >> $GITHUB_OUTPUT
           else
             echo "docker_configured=false" >> $GITHUB_OUTPUT
             echo "docker_pull_cmd=# Docker Hub 未配置，请使用 GitHub Container Registry" >> $GITHUB_OUTPUT
@@ -349,7 +381,7 @@ jobs:
             
             ```bash
             # 从 GitHub Container Registry
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.version }}
+            docker pull ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.clean_version }}
             
             # 从 Docker Hub (如果已配置)
             ${{ steps.docker_info.outputs.docker_pull_cmd }}
@@ -358,17 +390,31 @@ jobs:
             docker run -d \
               --name ${{ env.APP_NAME }} \
               -p 8080:8080 \
-              -v $(pwd)/data:/app/data \
-              ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.version }}
+              -v $(pwd)/design/data:/app/data \
+              ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.clean_version }}
             ```
             
             ### 📋 更新日志
             
             ${{ steps.changelog.outputs.CHANGELOG }}
             
-            ### 🛠️ 安装指南
+            ### 🛠️ 部署指南
             
-            #### 二进制安装
+            #### 🐳 Docker 部署 (推荐)
+            ```bash
+            # 快速启动
+            docker run -d \
+              --name ${{ env.APP_NAME }} \
+              -p 8080:8080 \
+              -v $(pwd)/data:/app/data \
+              ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.clean_version }}
+            
+            # 使用 docker-compose
+            curl -LO https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+            docker-compose up -d
+            ```
+            
+            #### 📦 二进制安装
             ```bash
             # 1. 下载对应平台的压缩包
             # 2. 解压文件
@@ -382,18 +428,6 @@ jobs:
             .\windows-amd64\${{ env.APP_NAME }}.exe  # Windows
             ```
             
-            #### 使用包管理器 (推荐)
-            ```bash
-            # Homebrew (macOS/Linux)
-            brew install ${{ github.repository_owner }}/${{ env.APP_NAME }}
-            
-            # Snap (Linux)
-            sudo snap install ${{ env.APP_NAME }}
-            
-            # Chocolatey (Windows)
-            choco install ${{ env.APP_NAME }}
-            ```
-            
             ### 🔍 校验文件完整性
             ```bash
             # 下载校验和文件
@@ -403,12 +437,21 @@ jobs:
             sha256sum -c checksums.txt
             ```
             
+            ### 🩺 健康检查
+            ```bash
+            # 检查应用状态
+            curl http://localhost:8080/health
+            
+            # 或通过浏览器访问
+            # http://localhost:8080/health
+            ```
+            
             ### 🆘 获取帮助
             
             - 📖 [用户文档](../../wiki)
             - 🐛 [报告问题](../../issues/new)
             - 💬 [讨论区](../../discussions)
-            - 📧 联系我们: [support@example.com](mailto:support@example.com)
+            - 📧 联系我们: [support@readnotion.com](mailto:support@readnotion.com)
             
             ---
             

@@ -16,18 +16,22 @@ import (
 	"github.com/samber/lo"
 )
 
-// 版本信息，在构建时注入
+// 版本信息，在构建时通过 -ldflags 注入
 var (
 	version   = "dev"
 	buildTime = "unknown"
+	gitCommit = "unknown"
 )
+
+// 应用启动时间
+var startTime = time.Now()
 
 //go:embed templates/**/*.html
 var htmlFS embed.FS
 
 func main() {
 	// 输出版本信息
-	log.Printf("DesignAI version: %s, build time: %s", version, buildTime)
+	log.Printf("DesignAI version: %s, build time: %s, commit: %s", version, buildTime, gitCommit)
 
 	// 初始化数据库
 	database.InitDatabase()
@@ -136,12 +140,44 @@ func main() {
 
 	// 健康检查路由
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+		// 检查数据库连接
+		db := database.GetDB()
+		dbStatus := "ok"
+		if db == nil {
+			dbStatus = "error"
+		} else {
+			sqlDB, err := db.DB()
+			if err != nil || sqlDB.Ping() != nil {
+				dbStatus = "error"
+			}
+		}
+
+		// 获取系统状态
+		uptime := time.Since(startTime)
+		
+		response := gin.H{
 			"status":    "ok",
 			"message":   "Service is healthy",
-			"version":   version,
-			"buildTime": buildTime,
-		})
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"version": gin.H{
+				"version":   version,
+				"buildTime": buildTime,
+				"gitCommit": gitCommit,
+			},
+			"system": gin.H{
+				"uptime":   uptime.String(),
+				"database": dbStatus,
+			},
+		}
+
+		// 如果数据库有问题，返回503状态码
+		if dbStatus == "error" {
+			response["status"] = "degraded"
+			c.JSON(http.StatusServiceUnavailable, response)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
 	})
 
 	port := os.Getenv("PORT")
