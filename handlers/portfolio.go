@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oldweipro/design-ai/database"
@@ -53,7 +54,35 @@ func GetPortfolios(c *gin.Context) {
 	dbQuery.Count(&total)
 
 	offset := (query.Page - 1) * query.PageSize
-	orderBy := query.SortBy + " " + query.Order
+
+	// Whitelisting allowed sort columns and orders to prevent SQL injection
+	allowedSortBy := map[string]bool{
+		"created_at": true,
+		"updated_at": true,
+		"title":      true,
+		"author":     true,
+		"id":         true,
+	}
+	allowedOrder := map[string]bool{
+		"ASC":  true,
+		"DESC": true,
+	}
+
+	sortBy := "created_at"
+	if allowedSortBy[query.SortBy] {
+		sortBy = query.SortBy
+	}
+
+	order := "DESC"
+	orderUpper := ""
+	if query.Order != "" {
+		orderUpper = strings.ToUpper(query.Order)
+	}
+	if allowedOrder[orderUpper] {
+		order = orderUpper
+	}
+
+	orderBy := sortBy + " " + order
 
 	err := dbQuery.Order(orderBy).Offset(offset).Limit(query.PageSize).Find(&portfolios).Error
 	if err != nil {
@@ -391,7 +420,7 @@ func GetMyPortfolios(c *gin.Context) {
 		"DESC": "DESC",
 	}
 	sortBy := "created_at" // default field
-	order := "DESC"         // default order
+	order := "DESC"        // default order
 	if allowedSortBy[query.SortBy] {
 		sortBy = query.SortBy
 	}
