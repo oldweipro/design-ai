@@ -229,6 +229,11 @@ class DashboardManager {
                         await this.loadMinioConfigs();
                     }
                     break;
+                case 'system-settings':
+                    if (AuthManager.isAdmin()) {
+                        await this.loadAdminSettings();
+                    }
+                    break;
             }
         } catch (error) {
             console.error(`Failed to load section data for ${sectionName}:`, error);
@@ -445,9 +450,19 @@ class DashboardManager {
             const result = await apiClient.request(`/portfolios/${portfolioId}`);
             const portfolio = result.data;
             
+            // 保存编辑中的作品ID，用于版本管理
+            this.editingPortfolioId = portfolioId;
+            
             // 填充表单数据
             this.fillEditForm(portfolio);
             this.showSection('edit-portfolio');
+            
+            // 显示版本管理部分并加载版本列表
+            const versionManagement = document.getElementById('versionManagement');
+            if (versionManagement) {
+                versionManagement.style.display = 'block';
+                loadPortfolioVersions(portfolioId);
+            }
             
         } catch (error) {
             console.error('Failed to load portfolio for editing:', error);
@@ -487,6 +502,54 @@ class DashboardManager {
                     tagsElement.value = portfolio.tags;
                 }
             }
+        }
+        
+        // 处理HTML内容
+        const htmlContentElement = document.getElementById('editHtmlContent');
+        if (htmlContentElement && portfolio.activeVersion && portfolio.activeVersion.htmlContent) {
+            htmlContentElement.value = portfolio.activeVersion.htmlContent;
+        }
+        
+        // 设置HTML编辑器切换事件
+        this.setupHtmlEditorToggle('Edit');
+    }
+
+    setupHtmlEditorToggle(suffix = '') {
+        const toggleBtn = document.getElementById(`toggleHtmlEditor${suffix}`);
+        const previewBtn = document.getElementById(`previewHtml${suffix}`);
+        const container = document.getElementById(`htmlEditorContainer${suffix}`);
+        const editor = document.getElementById(`${suffix === 'Edit' ? 'editHtmlContent' : 'htmlContent'}`);
+        const preview = document.getElementById(`htmlPreview${suffix}`);
+        
+        if (toggleBtn && container) {
+            // 移除旧的事件监听器
+            const newToggleBtn = toggleBtn.cloneNode(true);
+            toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+            
+            newToggleBtn.addEventListener('click', function() {
+                const isVisible = container.style.display !== 'none';
+                container.style.display = isVisible ? 'none' : 'block';
+                newToggleBtn.innerHTML = isVisible ? '<span>📝</span> 显示HTML编辑器' : '<span>🔽</span> 隐藏HTML编辑器';
+                if (previewBtn) {
+                    previewBtn.style.display = isVisible ? 'none' : 'inline-flex';
+                }
+            });
+        }
+        
+        if (previewBtn && editor && preview) {
+            // 移除旧的事件监听器
+            const newPreviewBtn = previewBtn.cloneNode(true);
+            previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
+            
+            newPreviewBtn.addEventListener('click', function() {
+                const htmlContent = editor.value || '<p>请先输入HTML代码</p>';
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                preview.src = url;
+                
+                // 清理旧的URL
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            });
         }
     }
 
@@ -884,10 +947,307 @@ class DashboardManager {
             NotificationManager.error('加载作品详情失败');
         }
     }
+
+    // 管理员设置相关方法
+    async loadAdminSettings() {
+        try {
+            const response = await apiClient.request('/admin/settings');
+            const settings = response.data;
+
+            // 更新界面状态
+            const userApprovalCheckbox = document.getElementById('userApprovalRequired');
+            const portfolioApprovalCheckbox = document.getElementById('portfolioApprovalRequired');
+
+            if (userApprovalCheckbox) {
+                userApprovalCheckbox.checked = settings.userApprovalRequired;
+            }
+
+            if (portfolioApprovalCheckbox) {
+                portfolioApprovalCheckbox.checked = settings.portfolioApprovalRequired;
+            }
+
+        } catch (error) {
+            console.error('Failed to load admin settings:', error);
+            NotificationManager.error('加载管理员设置失败');
+        }
+    }
+
+    async saveAdminSettings() {
+        try {
+            const userApprovalRequired = document.getElementById('userApprovalRequired').checked;
+            const portfolioApprovalRequired = document.getElementById('portfolioApprovalRequired').checked;
+
+            const data = {
+                userApprovalRequired,
+                portfolioApprovalRequired
+            };
+
+            await apiClient.request('/admin/settings', {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+
+            NotificationManager.success('管理员设置已保存');
+
+        } catch (error) {
+            console.error('Failed to save admin settings:', error);
+            NotificationManager.error('保存管理员设置失败');
+        }
+    }
 }
 
 // 全局变量，供其他脚本使用
 let dashboardManager;
+
+// 全局函数，供HTML模板调用
+window.saveAdminSettings = function() {
+    if (dashboardManager && dashboardManager.saveAdminSettings) {
+        dashboardManager.saveAdminSettings();
+    } else {
+        console.error('Dashboard manager not available');
+        NotificationManager.error('系统未初始化完成，请刷新页面');
+    }
+};
+
+// HTML编辑器相关功能
+window.toggleCodeEditor = function() {
+    const editor = document.getElementById('htmlContentEditor');
+    const toggleText = document.getElementById('editorToggleText');
+    const preview = document.getElementById('htmlPreview');
+    
+    if (editor.style.display === 'none') {
+        editor.style.display = 'block';
+        toggleText.textContent = '📝 隐藏代码编辑器';
+        preview.style.display = 'none';
+    } else {
+        editor.style.display = 'none';
+        toggleText.textContent = '📝 显示代码编辑器';
+    }
+};
+
+window.previewHTML = function() {
+    const editor = document.getElementById('htmlContentEditor');
+    const preview = document.getElementById('htmlPreview');
+    const frame = document.getElementById('previewFrame');
+    
+    if (preview.style.display === 'none') {
+        const htmlContent = editor.value || '<p style="text-align: center; color: #666; padding: 2rem;">请先输入HTML代码</p>';
+        
+        // 更新iframe内容
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        frame.src = url;
+        
+        preview.style.display = 'block';
+        editor.style.display = 'none';
+        
+        // 清理旧的URL
+        frame.onload = function() {
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        };
+    } else {
+        preview.style.display = 'none';
+    }
+};
+
+// 版本管理功能
+window.showCreateVersionModal = function() {
+    const modal = document.getElementById('versionModal');
+    const form = document.getElementById('versionForm');
+    const title = document.getElementById('versionModalTitle');
+    
+    // 重置表单
+    form.reset();
+    document.getElementById('versionId').value = '';
+    document.getElementById('versionPortfolioId').value = dashboardManager.editingPortfolioId || '';
+    
+    // 设置模态框标题
+    title.textContent = '新建版本';
+    document.getElementById('versionSubmitIcon').textContent = '➕';
+    document.getElementById('versionSubmitText').textContent = '创建版本';
+    
+    modal.classList.add('show');
+};
+
+window.closeVersionModal = function() {
+    const modal = document.getElementById('versionModal');
+    modal.classList.remove('show');
+};
+
+window.editVersion = function(portfolioId, versionId) {
+    const modal = document.getElementById('versionModal');
+    const form = document.getElementById('versionForm');
+    const title = document.getElementById('versionModalTitle');
+    
+    // 获取版本数据
+    fetch(`/api/v1/portfolios/${portfolioId}/versions/${versionId}`, {
+        headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
+    })
+    .then(response => response.json())
+    .then(result => {
+        const version = result.data;
+        
+        // 填充表单
+        document.getElementById('versionId').value = version.id;
+        document.getElementById('versionPortfolioId').value = portfolioId;
+        document.getElementById('versionTitle').value = version.title;
+        document.getElementById('versionDescription').value = version.description || '';
+        document.getElementById('versionHtmlContent').value = version.htmlContent;
+        document.getElementById('versionChangeLog').value = version.changeLog || '';
+        document.getElementById('versionIsActive').checked = version.isActive;
+        
+        // 设置模态框标题
+        title.textContent = '编辑版本';
+        document.getElementById('versionSubmitIcon').textContent = '💾';
+        document.getElementById('versionSubmitText').textContent = '保存更改';
+        
+        modal.classList.add('show');
+    })
+    .catch(error => {
+        console.error('获取版本数据失败:', error);
+        UIHelper.showToast('获取版本数据失败', 'error');
+    });
+};
+
+window.deleteVersion = function(portfolioId, versionId, versionTitle) {
+    if (!confirm(`确定要删除版本 "${versionTitle}" 吗？此操作无法撤销。`)) {
+        return;
+    }
+    
+    fetch(`/api/v1/portfolios/${portfolioId}/versions/${versionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
+    })
+    .then(response => response.json())
+    .then(result => {
+        UIHelper.showToast('版本删除成功', 'success');
+        loadPortfolioVersions(portfolioId);
+    })
+    .catch(error => {
+        console.error('删除版本失败:', error);
+        UIHelper.showToast('删除版本失败', 'error');
+    });
+};
+
+window.setActiveVersion = function(portfolioId, versionId) {
+    fetch(`/api/v1/portfolios/${portfolioId}/versions/${versionId}/activate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
+    })
+    .then(response => response.json())
+    .then(result => {
+        UIHelper.showToast('已设置为活跃版本', 'success');
+        loadPortfolioVersions(portfolioId);
+    })
+    .catch(error => {
+        console.error('设置活跃版本失败:', error);
+        UIHelper.showToast('设置活跃版本失败', 'error');
+    });
+};
+
+// 加载作品版本列表
+function loadPortfolioVersions(portfolioId) {
+    fetch(`/api/v1/portfolios/${portfolioId}/versions`, {
+        headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
+    })
+    .then(response => response.json())
+    .then(result => {
+        renderVersionsList(result.data || []);
+    })
+    .catch(error => {
+        console.error('加载版本列表失败:', error);
+        document.getElementById('versionsList').innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">加载版本列表失败</p>';
+    });
+}
+
+// 渲染版本列表
+function renderVersionsList(versions) {
+    const container = document.getElementById('versionsList');
+    
+    if (!versions.length) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暂无版本</p>';
+        return;
+    }
+    
+    const html = versions.map(version => `
+        <div class="version-item ${version.isActive ? 'active' : ''}" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: var(--card-bg);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <h4 style="margin: 0; color: var(--text-primary);">${version.version}</h4>
+                        ${version.isActive ? '<span class="badge badge-success">活跃</span>' : ''}
+                    </div>
+                    <p style="margin: 0; font-weight: 600; color: var(--text-primary);">${version.title}</p>
+                    ${version.description ? `<p style="margin: 0.5rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">${version.description}</p>` : ''}
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-secondary" onclick="editVersion('${version.portfolioId}', '${version.id}')" title="编辑版本">
+                        <span>✏️</span>
+                    </button>
+                    ${!version.isActive ? `<button class="btn btn-sm btn-primary" onclick="setActiveVersion('${version.portfolioId}', '${version.id}')" title="设为活跃版本">
+                        <span>✨</span>
+                    </button>` : ''}
+                    ${!version.isActive ? `<button class="btn btn-sm btn-danger" onclick="deleteVersion('${version.portfolioId}', '${version.id}', '${version.title.replace(/'/g, "\\'")}')" title="删除版本">
+                        <span>🗑️</span>
+                    </button>` : ''}
+                </div>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <span>创建时间：${new Date(version.createdAt).toLocaleDateString()}</span>
+                ${version.changeLog ? ` • 更新日志：${version.changeLog}` : ''}
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+// 版本表单提交事件
+document.addEventListener('DOMContentLoaded', function() {
+    const versionForm = document.getElementById('versionForm');
+    if (versionForm) {
+        versionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const portfolioId = document.getElementById('versionPortfolioId').value;
+            const versionId = document.getElementById('versionId').value;
+            const isEdit = !!versionId;
+            
+            const data = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                htmlContent: formData.get('htmlContent'),
+                changeLog: formData.get('changeLog'),
+                isActive: document.getElementById('versionIsActive').checked
+            };
+            
+            const url = isEdit 
+                ? `/api/v1/portfolios/${portfolioId}/versions/${versionId}`
+                : `/api/v1/portfolios/${portfolioId}/versions`;
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AuthManager.getToken()}`
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                UIHelper.showToast(isEdit ? '版本更新成功' : '版本创建成功', 'success');
+                closeVersionModal();
+                loadPortfolioVersions(portfolioId);
+            })
+            .catch(error => {
+                console.error('版本操作失败:', error);
+                UIHelper.showToast(isEdit ? '版本更新失败' : '版本创建失败', 'error');
+            });
+        });
+    }
+});
 
 // DOM加载完成后初始化仪表板
 document.addEventListener('DOMContentLoaded', function() {

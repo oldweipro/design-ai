@@ -23,36 +23,62 @@ func Register(c *gin.Context) {
 	// 检查邮箱是否已存在
 	var existingUser models.User
 	if err := db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+		c.JSON(http.StatusConflict, gin.H{"error": "邮箱已存在"})
 		return
 	}
 
 	// 检查用户名是否已存在
 	if err := db.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+		c.JSON(http.StatusConflict, gin.H{"error": "用户名已存在"})
 		return
+	}
+
+	// 获取管理员设置以确定用户状态
+	var adminSettings models.AdminSettings
+	if err := db.First(&adminSettings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法获取管理员设置"})
+		return
+	}
+
+	// 根据管理员设置决定用户初始状态
+	userStatus := "approved" // 默认直接批准
+	if adminSettings.UserApprovalRequired {
+		userStatus = "pending" // 需要管理员审核
+	}
+
+	// 如果没有提供昵称，使用用户名作为默认昵称
+	nickname := req.Nickname
+	if nickname == "" {
+		nickname = req.Username
 	}
 
 	// 创建新用户
 	user := models.User{
 		Email:    req.Email,
 		Username: req.Username,
+		Nickname: nickname,
 		Role:     "user",
-		Status:   "pending", // 需要管理员审核
+		Status:   userStatus,
 	}
 
 	if err := user.HashPassword(req.Password); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法哈希密码"})
 		return
 	}
 
 	if err := db.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法创建用户"})
 		return
 	}
 
+	// 根据用户状态返回不同的消息
+	message := "注册成功."
+	if userStatus == "pending" {
+		message = "注册成功。请等待管理员批准."
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Registration successful. Please wait for admin approval.",
+		"message": message,
 		"user":    user.ToResponse(),
 	})
 }
@@ -154,10 +180,14 @@ func UpdateProfile(c *gin.Context) {
 	if req.Username != "" && req.Username != user.Username {
 		var existingUser models.User
 		if err := db.Where("username = ? AND id != ?", req.Username, userID).First(&existingUser).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+			c.JSON(http.StatusConflict, gin.H{"error": "用户名已存在"})
 			return
 		}
 		user.Username = req.Username
+	}
+
+	if req.Nickname != "" {
+		user.Nickname = req.Nickname
 	}
 
 	if req.Avatar != "" {

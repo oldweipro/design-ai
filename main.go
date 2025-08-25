@@ -143,6 +143,14 @@ func main() {
 			protected.POST("/portfolios", handlers.CreatePortfolio)
 			protected.PUT("/portfolios/:id", handlers.UpdatePortfolio)
 			protected.DELETE("/portfolios/:id", handlers.DeletePortfolio)
+
+			// 作品版本管理
+			protected.POST("/portfolios/:id/versions", handlers.CreatePortfolioVersion)
+			protected.GET("/portfolios/:id/versions", handlers.GetPortfolioVersions)
+			protected.GET("/portfolios/:id/versions/:versionId", handlers.GetPortfolioVersion)
+			protected.PUT("/portfolios/:id/versions/:versionId", handlers.UpdatePortfolioVersion)
+			protected.DELETE("/portfolios/:id/versions/:versionId", handlers.DeletePortfolioVersion)
+			protected.POST("/portfolios/:id/versions/:versionId/activate", handlers.SetActiveVersion)
 		}
 
 		// 文件管理接口
@@ -182,6 +190,10 @@ func main() {
 			admin.POST("/minio/:id/activate", handlers.ActivateMinIOConfig)
 			admin.POST("/minio/test", handlers.TestMinIOConnection)
 			admin.POST("/minio/:id/test", handlers.TestMinIOConfigConnection)
+
+			// 管理员设置
+			admin.GET("/settings", handlers.GetAdminSettings)
+			admin.PUT("/settings", handlers.UpdateAdminSettings)
 		}
 	}
 

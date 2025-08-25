@@ -29,9 +29,14 @@ func InitDatabase() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Portfolio{}, &models.MinIOConfig{}, &models.FileObject{})
+	err = DB.AutoMigrate(&models.User{}, &models.Portfolio{}, &models.PortfolioVersion{}, &models.MinIOConfig{}, &models.FileObject{}, &models.AdminSettings{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
+	}
+
+	// 确保存在默认管理员设置
+	if err := ensureDefaultAdminSettings(); err != nil {
+		log.Fatal("Failed to create default admin settings:", err)
 	}
 
 	log.Printf("Database connected and migrated successfully at: %s", dbPath)
@@ -60,4 +65,24 @@ func ensureDBDir(dbPath string) error {
 
 func GetDB() *gorm.DB {
 	return DB
+}
+
+// ensureDefaultAdminSettings 确保存在默认的管理员设置
+func ensureDefaultAdminSettings() error {
+	var count int64
+	err := DB.Model(&models.AdminSettings{}).Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	// 如果没有设置记录，创建默认设置
+	if count == 0 {
+		defaultSettings := &models.AdminSettings{
+			UserApprovalRequired:      false,
+			PortfolioApprovalRequired: false,
+		}
+		return DB.Create(defaultSettings).Error
+	}
+
+	return nil
 }

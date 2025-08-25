@@ -27,6 +27,10 @@ type Portfolio struct {
 
 	// 关联用户
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID"`
+
+	// 关联版本
+	Versions      []PortfolioVersion `json:"versions,omitempty" gorm:"foreignKey:PortfolioID"`
+	ActiveVersion *PortfolioVersion  `json:"activeVersion,omitempty" gorm:"foreignKey:PortfolioID;constraint:OnDelete:SET NULL;where:is_active = true"`
 }
 
 func (p *Portfolio) BeforeCreate(tx *gorm.DB) error {
@@ -37,31 +41,34 @@ func (p *Portfolio) BeforeCreate(tx *gorm.DB) error {
 }
 
 type PortfolioResponse struct {
-	ID            string        `json:"id"`
-	UserID        string        `json:"user_id"`
-	Title         string        `json:"title"`
-	Author        string        `json:"author"`
-	AuthorInitial string        `json:"authorInitial"`
-	Description   string        `json:"description"`
-	Content       string        `json:"content"`
-	Category      string        `json:"category"`
-	Tags          []string      `json:"tags"`
-	Image         string        `json:"image"`
-	ImageURL      string        `json:"imageUrl"`
-	AILevel       string        `json:"aiLevel"`
-	Likes         int           `json:"likes"`
-	Views         int           `json:"views"`
-	Status        string        `json:"status"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
-	User          *UserResponse `json:"user,omitempty"`
+	ID            string                     `json:"id"`
+	UserID        string                     `json:"user_id"`
+	Title         string                     `json:"title"`
+	Author        string                     `json:"author"`
+	AuthorInitial string                     `json:"authorInitial"`
+	Description   string                     `json:"description"`
+	Content       string                     `json:"content"`
+	Category      string                     `json:"category"`
+	Tags          []string                   `json:"tags"`
+	Image         string                     `json:"image"`
+	ImageURL      string                     `json:"imageUrl"`
+	AILevel       string                     `json:"aiLevel"`
+	Likes         int                        `json:"likes"`
+	Views         int                        `json:"views"`
+	Status        string                     `json:"status"`
+	CreatedAt     time.Time                  `json:"createdAt"`
+	UpdatedAt     time.Time                  `json:"updatedAt"`
+	User          *UserResponse              `json:"user,omitempty"`
+	Versions      []PortfolioVersionResponse `json:"versions,omitempty"`
+	ActiveVersion *PortfolioVersionResponse  `json:"activeVersion,omitempty"`
+	Thumbnail     string                     `json:"thumbnail,omitempty"` // 从活跃版本获取的缩略图
 }
 
 type CreatePortfolioRequest struct {
 	Title         string   `json:"title" binding:"required"`
-	Author        string   `json:"author" binding:"required"`
 	Description   string   `json:"description"`
 	Content       string   `json:"content"`
+	HTMLContent   string   `json:"htmlContent"`
 	Category      string   `json:"category" binding:"required"`
 	Tags          []string `json:"tags"`
 	ImageObjectID string   `json:"imageObjectId"`
@@ -70,7 +77,6 @@ type CreatePortfolioRequest struct {
 
 type UpdatePortfolioRequest struct {
 	Title         string   `json:"title"`
-	Author        string   `json:"author"`
 	Description   string   `json:"description"`
 	Content       string   `json:"content"`
 	Category      string   `json:"category"`

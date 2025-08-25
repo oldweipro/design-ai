@@ -11,6 +11,7 @@ import (
 	"github.com/oldweipro/design-ai/middleware"
 	"github.com/oldweipro/design-ai/models"
 	"github.com/oldweipro/design-ai/services"
+	"gorm.io/gorm"
 )
 
 // buildPortfolioResponse 构建Portfolio响应数据，包含图片URL
@@ -52,12 +53,28 @@ func buildPortfolioResponse(portfolio models.Portfolio) models.PortfolioResponse
 
 	// 添加用户信息
 	if portfolio.User != nil {
-		response.User = &models.UserResponse{
-			ID:       portfolio.User.ID,
-			Username: portfolio.User.Username,
-			Email:    portfolio.User.Email,
-			Avatar:   portfolio.User.Avatar,
+		userResponse := portfolio.User.ToResponse()
+		response.User = &userResponse
+	}
+
+	// 添加版本信息
+	if len(portfolio.Versions) > 0 {
+		response.Versions = make([]models.PortfolioVersionResponse, len(portfolio.Versions))
+		for i, version := range portfolio.Versions {
+			response.Versions[i] = version.ToResponse()
 		}
+	}
+
+	// 添加活跃版本信息和缩略图
+	if portfolio.ActiveVersion != nil {
+		activeVersion := portfolio.ActiveVersion.ToResponse()
+		response.ActiveVersion = &activeVersion
+		response.Thumbnail = portfolio.ActiveVersion.Thumbnail
+	} else if len(portfolio.Versions) > 0 {
+		// 如果没有明确的活跃版本，使用最新版本
+		latestVersion := portfolio.Versions[0].ToResponse()
+		response.ActiveVersion = &latestVersion
+		response.Thumbnail = portfolio.Versions[0].Thumbnail
 	}
 
 	return response
@@ -83,7 +100,12 @@ func GetPortfolios(c *gin.Context) {
 	var portfolios []models.Portfolio
 	var total int64
 
-	dbQuery := db.Model(&models.Portfolio{}).Preload("User")
+	dbQuery := db.Model(&models.Portfolio{}).
+		Preload("User").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		Preload("ActiveVersion")
 
 	// 根据用户角色决定可见性
 	isAdmin := middleware.IsAdmin(c)
@@ -216,27 +238,82 @@ func CreatePortfolio(c *gin.Context) {
 
 	tagsJSON, _ := json.Marshal(req.Tags)
 
+	db := database.GetDB()
+
+	// 获取当前用户信息，用于设置作者昵称
+	var currentUser models.User
+	if err := db.Where("id = ?", userID).First(&currentUser).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用户未找到"})
+		return
+	}
+
+	// 获取管理员设置以确定作品状态
+	var adminSettings models.AdminSettings
+	if err := db.First(&adminSettings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get admin settings"})
+		return
+	}
+
+	// 根据管理员设置决定作品初始状态
+	portfolioStatus := "published" // 默认直接发布
+	if adminSettings.PortfolioApprovalRequired {
+		portfolioStatus = "draft" // 需要管理员审核
+	}
+
+	// 使用用户昵称作为作者，如果昵称为空则使用用户名
+	authorName := currentUser.Nickname
+	if authorName == "" {
+		authorName = currentUser.Username
+	}
+
 	portfolio := models.Portfolio{
 		UserID:        userID,
 		Title:         req.Title,
-		Author:        req.Author,
+		Author:        authorName, // 使用用户昵称作为作者
 		Description:   req.Description,
 		Content:       req.Content,
 		Category:      req.Category,
 		Tags:          string(tagsJSON),
 		ImageObjectID: req.ImageObjectID,
 		AILevel:       req.AILevel,
-		Status:        "draft", // 默认为草稿状态，需要管理员审核
+		Status:        portfolioStatus,
 	}
 
-	db := database.GetDB()
-	if err := db.Create(&portfolio).Error; err != nil {
+	// 使用事务来创建作品和版本
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 创建作品
+		if err := tx.Create(&portfolio).Error; err != nil {
+			return err
+		}
+
+		// 如果提供了HTML内容，创建初始版本
+		if req.HTMLContent != "" {
+			version := models.PortfolioVersion{
+				PortfolioID: portfolio.ID,
+				Version:     "v1.0",
+				Title:       portfolio.Title,
+				Description: portfolio.Description,
+				HTMLContent: req.HTMLContent,
+				Thumbnail:   services.ThumbnailSvc.GenerateHTMLThumbnail(req.HTMLContent),
+				IsActive:    true, // 设为活跃版本
+				ChangeLog:   "初始版本",
+			}
+
+			if err := tx.Create(&version).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create portfolio"})
 		return
 	}
 
-	// 预加载用户信息
-	db.Preload("User").First(&portfolio, portfolio.ID)
+	// 预加载用户信息和版本信息
+	db.Preload("User").Preload("Versions").Preload("ActiveVersion").First(&portfolio, portfolio.ID)
 
 	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusCreated, gin.H{"data": response})
@@ -275,9 +352,17 @@ func UpdatePortfolio(c *gin.Context) {
 	if req.Title != "" {
 		portfolio.Title = req.Title
 	}
-	if req.Author != "" {
-		portfolio.Author = req.Author
+
+	// 更新作者信息：从用户信息获取最新的昵称
+	var currentUser models.User
+	if err := db.Where("id = ?", portfolio.UserID).First(&currentUser).Error; err == nil {
+		authorName := currentUser.Nickname
+		if authorName == "" {
+			authorName = currentUser.Username
+		}
+		portfolio.Author = authorName
 	}
+
 	if req.Description != "" {
 		portfolio.Description = req.Description
 	}

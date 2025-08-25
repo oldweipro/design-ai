@@ -12,6 +12,7 @@ type User struct {
 	ID        string    `json:"id" gorm:"type:char(36);primary_key"`
 	Email     string    `json:"email" gorm:"unique;not null;size:255"`
 	Username  string    `json:"username" gorm:"unique;not null;size:100"`
+	Nickname  string    `json:"nickname" gorm:"size:100"`   // 昵称，用于显示
 	Password  string    `json:"-" gorm:"not null;size:255"` // 不在JSON中返回密码
 	Avatar    string    `json:"avatar" gorm:"size:500"`
 	Bio       string    `json:"bio" gorm:"type:text"`
@@ -52,6 +53,7 @@ type UserResponse struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	Username  string    `json:"username"`
+	Nickname  string    `json:"nickname"`
 	Avatar    string    `json:"avatar"`
 	Bio       string    `json:"bio"`
 	Role      string    `json:"role"`
@@ -64,6 +66,7 @@ type UserResponse struct {
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Username string `json:"username" binding:"required,min=3,max=20"`
+	Nickname string `json:"nickname" binding:"max=50"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
@@ -82,6 +85,7 @@ type LoginResponse struct {
 // 更新用户资料请求
 type UpdateUserRequest struct {
 	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 	Bio      string `json:"bio"`
 }
@@ -107,6 +111,7 @@ func (u *User) ToResponse() UserResponse {
 		ID:        u.ID,
 		Email:     u.Email,
 		Username:  u.Username,
+		Nickname:  u.Nickname,
 		Avatar:    u.Avatar,
 		Bio:       u.Bio,
 		Role:      u.Role,
