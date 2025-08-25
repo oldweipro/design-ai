@@ -126,8 +126,8 @@ func GetPortfolios(c *gin.Context) {
 
 	if query.Search != "" {
 		searchTerm := "%" + query.Search + "%"
-		dbQuery = dbQuery.Where("title LIKE ? OR author LIKE ? OR description LIKE ? OR tags LIKE ? OR content LIKE ?",
-			searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+		dbQuery = dbQuery.Where("title LIKE ? OR author LIKE ? OR description LIKE ? OR tags LIKE ?",
+			searchTerm, searchTerm, searchTerm, searchTerm)
 	}
 
 	dbQuery.Count(&total)
@@ -194,7 +194,12 @@ func GetPortfolioByID(c *gin.Context) {
 	isAdmin := middleware.IsAdmin(c)
 	userID, hasUser := middleware.GetCurrentUserID(c)
 
-	query := db.Preload("User").Where("id = ?", id)
+	query := db.Preload("User").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		Preload("ActiveVersion").
+		Where("id = ?", id)
 
 	if !isAdmin {
 		// 普通用户只能看到已发布的作品，或者自己的作品
@@ -396,9 +401,7 @@ func UpdatePortfolio(c *gin.Context) {
 	if req.Description != "" {
 		portfolio.Description = req.Description
 	}
-	if req.Content != "" {
-		portfolio.Content = req.Content
-	}
+	// 移除Content字段更新，因为现在使用版本系统
 	if req.Category != "" {
 		portfolio.Category = req.Category
 	}
@@ -427,8 +430,13 @@ func UpdatePortfolio(c *gin.Context) {
 		return
 	}
 
-	// 预加载用户信息
-	db.Preload("User").First(&portfolio, portfolio.ID)
+	// 预加载用户信息和版本信息
+	db.Preload("User").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		Preload("ActiveVersion").
+		First(&portfolio, portfolio.ID)
 
 	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusOK, gin.H{"data": response})
@@ -559,7 +567,13 @@ func GetMyPortfolios(c *gin.Context) {
 	var portfolios []models.Portfolio
 	var total int64
 
-	dbQuery := db.Model(&models.Portfolio{}).Preload("User").Where("user_id = ?", userID)
+	dbQuery := db.Model(&models.Portfolio{}).
+		Preload("User").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		Preload("ActiveVersion").
+		Where("user_id = ?", userID)
 
 	if query.Status != "" {
 		dbQuery = dbQuery.Where("status = ?", query.Status)
@@ -571,7 +585,7 @@ func GetMyPortfolios(c *gin.Context) {
 
 	if query.Search != "" {
 		searchTerm := "%" + query.Search + "%"
-		dbQuery = dbQuery.Where("title LIKE ? OR description LIKE ? OR content LIKE ?",
+		dbQuery = dbQuery.Where("title LIKE ? OR description LIKE ? OR tags LIKE ?",
 			searchTerm, searchTerm, searchTerm)
 	}
 
@@ -652,7 +666,12 @@ func GetAllPortfolios(c *gin.Context) {
 		}
 	}
 
-	dbQuery := db.Preload("User").Model(&models.Portfolio{})
+	dbQuery := db.Preload("User").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
+		Preload("ActiveVersion").
+		Model(&models.Portfolio{})
 
 	// 状态过滤
 	if query.Status != "" {

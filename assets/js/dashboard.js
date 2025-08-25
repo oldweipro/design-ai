@@ -461,7 +461,13 @@ class DashboardManager {
             const versionManagement = document.getElementById('versionManagement');
             if (versionManagement) {
                 versionManagement.style.display = 'block';
-                loadPortfolioVersions(portfolioId);
+                
+                // 如果后端已经返回版本数据，直接使用；否则重新获取
+                if (portfolio.versions && portfolio.versions.length > 0) {
+                    renderVersionsList(portfolio.versions);
+                } else {
+                    loadPortfolioVersions(portfolioId);
+                }
             }
             
         } catch (error) {
@@ -476,7 +482,6 @@ class DashboardManager {
             'editTitle': portfolio.title,
             'editCategory': portfolio.category,
             'editDescription': portfolio.description,
-            'editContent': portfolio.content,
             'editAiLevel': portfolio.aiLevel,
             'editImageUrl': portfolio.imageUrl,
             'editStatus': portfolio.status
