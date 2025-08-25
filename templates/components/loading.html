@@ -1,0 +1,37 @@
+{{define "components/loading"}}
+<!-- 通用加载组件 -->
+{{/*
+使用方法：
+{{template "components/loading" (dict "text" "加载中..." "type" "dots")}}
+
+参数：
+- text: 加载文本
+- type: 加载动画类型 (dots/spinner/pulse)
+- size: 大小 (sm/md/lg)
+*/}}
+
+<div class="loading-container {{if .size}}loading-{{.size}}{{end}}">
+    {{if eq .type "spinner"}}
+    <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+    </div>
+    {{else if eq .type "pulse"}}
+    <div class="loading-pulse">
+        <div class="pulse-dot"></div>
+        <div class="pulse-dot"></div>
+        <div class="pulse-dot"></div>
+    </div>
+    {{else}}
+    <!-- 默认dots类型 -->
+    <div class="loading">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+    </div>
+    {{end}}
+    
+    {{if .text}}
+    <span class="loading-text">{{.text}}</span>
+    {{end}}
+</div>
+{{end}}

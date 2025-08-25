@@ -1,0 +1,37 @@
+{{define "components/modal"}}
+<!-- 通用模态框组件 -->
+{{/*
+使用方法：
+{{template "components/modal" (dict "id" "myModal" "title" "标题" "content" "内容HTML" "size" "lg")}}
+
+参数：
+- id: 模态框ID
+- title: 标题
+- content: 内容HTML
+- size: 大小 (sm/md/lg/xl)
+- closable: 是否可关闭 (默认true)
+*/}}
+
+<div id="{{.id}}" class="modal">
+    <div class="modal-content {{if .size}}modal-{{.size}}{{end}}">
+        {{if ne .closable false}}
+        <div class="modal-header">
+            <h3 class="modal-title">{{.title}}</h3>
+            <button class="close-btn" onclick="ModalManager.hide('{{.id}}')" aria-label="关闭">
+                &times;
+            </button>
+        </div>
+        {{end}}
+        
+        <div class="modal-body">
+            {{.content | safeHTML}}
+        </div>
+        
+        {{if .footer}}
+        <div class="modal-footer">
+            {{.footer | safeHTML}}
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

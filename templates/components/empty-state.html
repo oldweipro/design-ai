@@ -1,0 +1,48 @@
+{{define "components/empty-state"}}
+<!-- 通用空状态组件 -->
+{{/*
+使用方法：
+{{template "components/empty-state" (dict 
+    "icon" "🎨" 
+    "title" "暂无作品" 
+    "description" "您还没有创建任何作品" 
+    "action" (dict "text" "创建作品" "link" "#create" "onclick" "createPortfolio()")
+)}}
+
+参数：
+- icon: 图标 (emoji或class)
+- title: 标题
+- description: 描述
+- action: 操作按钮 {text, link, onclick, class}
+*/}}
+
+<div class="empty-state">
+    {{if .icon}}
+    <div class="empty-icon">{{.icon}}</div>
+    {{end}}
+    
+    {{if .title}}
+    <h3 class="empty-title">{{.title}}</h3>
+    {{end}}
+    
+    {{if .description}}
+    <p class="empty-description">{{.description}}</p>
+    {{end}}
+    
+    {{if .action}}
+    <div class="empty-action">
+        {{if .action.link}}
+        <a href="{{.action.link}}" class="btn {{.action.class | default "btn-primary"}}"
+           {{if .action.onclick}}onclick="{{.action.onclick}}"{{end}}>
+            {{.action.text}}
+        </a>
+        {{else if .action.onclick}}
+        <button class="btn {{.action.class | default "btn-primary"}}" 
+                onclick="{{.action.onclick}}">
+            {{.action.text}}
+        </button>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}

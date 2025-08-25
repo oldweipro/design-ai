@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/oldweipro/design-ai/database"
 	"github.com/oldweipro/design-ai/handlers"
 	"github.com/oldweipro/design-ai/middleware"
+	"github.com/oldweipro/design-ai/services"
 	"github.com/samber/lo"
 )
 
@@ -26,8 +28,8 @@ var (
 // 应用启动时间
 var startTime = time.Now()
 
-//go:embed templates/**/*.html
-var htmlFS embed.FS
+//go:embed templates/**/*.html assets/css assets/js
+var staticFS embed.FS
 
 func main() {
 	// 输出版本信息
@@ -36,6 +38,11 @@ func main() {
 	// 初始化数据库
 	database.InitDatabase()
 	database.SeedData()
+
+	// 加载MinIO配置
+	if err := services.LoadActiveConfig(); err != nil {
+		log.Printf("Warning: Failed to load MinIO config: %v", err)
+	}
 
 	r := gin.Default()
 
@@ -55,12 +62,28 @@ func main() {
 
 	// 自定义模板函数
 	funcMap := template.FuncMap{
-		"upper":   strings.ToUpper,
-		"yearNow": func() int { return time.Now().Year() },
+		"upper":    strings.ToUpper,
+		"yearNow":  func() int { return time.Now().Year() },
+		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		"dict": func(values ...interface{}) map[string]interface{} {
+			dict := make(map[string]interface{})
+			for i := 0; i < len(values); i += 2 {
+				if i+1 < len(values) {
+					dict[values[i].(string)] = values[i+1]
+				}
+			}
+			return dict
+		},
+		"default": func(defaultValue interface{}, value interface{}) interface{} {
+			if value == nil || value == "" {
+				return defaultValue
+			}
+			return value
+		},
 	}
 
 	// 解析所有模板（带函数）
-	tpl := lo.Must(template.New("").Funcs(funcMap).ParseFS(htmlFS, "templates/**/*.html"))
+	tpl := lo.Must(template.New("").Funcs(funcMap).ParseFS(staticFS, "templates/**/*.html"))
 	r.SetHTMLTemplate(tpl)
 
 	// 页面路由
@@ -84,6 +107,11 @@ func main() {
 	// 需要认证的页面（在前端JavaScript中检查认证）
 	r.GET("/dashboard", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "pages/dashboard", gin.H{"Title": "用户仪表板"})
+	})
+
+	// MinIO设置页面（重定向到仪表板）
+	r.GET("/minio-settings", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/dashboard#minio-settings")
 	})
 
 	// API路由组
@@ -117,6 +145,18 @@ func main() {
 			protected.DELETE("/portfolios/:id", handlers.DeletePortfolio)
 		}
 
+		// 文件管理接口
+		files := api.Group("/files")
+		{
+			// 公开接口
+			files.POST("/upload", middleware.OptionalAuthMiddleware(), handlers.UploadFile)
+			files.GET("/:id/url", handlers.GetFileURL)
+			files.GET("", handlers.GetFiles)
+
+			// 需要认证的接口
+			files.DELETE("/:id", middleware.AuthMiddleware(), handlers.DeleteFile)
+		}
+
 		// 管理员接口
 		admin := api.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
@@ -132,11 +172,22 @@ func main() {
 			admin.GET("/portfolios", handlers.GetAllPortfolios)
 			admin.PUT("/portfolios/:id", handlers.UpdatePortfolioStatus)
 			admin.DELETE("/portfolios/:id", handlers.AdminDeletePortfolio)
+
+			// MinIO配置管理
+			admin.GET("/minio", handlers.GetMinIOConfigs)
+			admin.POST("/minio", handlers.CreateMinIOConfig)
+			admin.GET("/minio/:id", handlers.GetMinIOConfig)
+			admin.PUT("/minio/:id", handlers.UpdateMinIOConfig)
+			admin.DELETE("/minio/:id", handlers.DeleteMinIOConfig)
+			admin.POST("/minio/:id/activate", handlers.ActivateMinIOConfig)
+			admin.POST("/minio/test", handlers.TestMinIOConnection)
+			admin.POST("/minio/:id/test", handlers.TestMinIOConfigConnection)
 		}
 	}
 
-	// 静态资源
-	r.Static("/assets", "./assets")
+	// 静态资源 - 使用embed文件系统，但需要子目录映射
+	assetsFS, _ := fs.Sub(staticFS, "assets")
+	r.StaticFS("/assets", http.FS(assetsFS))
 
 	// 健康检查路由
 	r.GET("/health", func(c *gin.Context) {
@@ -154,7 +205,7 @@ func main() {
 
 		// 获取系统状态
 		uptime := time.Since(startTime)
-		
+
 		response := gin.H{
 			"status":    "ok",
 			"message":   "Service is healthy",

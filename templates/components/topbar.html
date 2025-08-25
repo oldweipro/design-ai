@@ -1,0 +1,19 @@
+{{define "components/topbar"}}
+<div class="top-bar-left">
+    <button class="mobile-menu-btn" onclick="dashboardManager.toggleSidebar()">☰</button>
+    <h1 id="pageTitle" class="page-title">仪表板</h1>
+</div>
+
+<div class="top-actions">
+    <button class="theme-toggle" onclick="ThemeManager.toggle()" aria-label="切换主题">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
+    <div class="user-actions">
+        <button class="btn btn-secondary" onclick="AuthManager.logout()" title="退出登录">
+            <span>🚪</span>
+            <span class="desktop-only">退出</span>
+        </button>
+    </div>
+</div>
+{{end}}

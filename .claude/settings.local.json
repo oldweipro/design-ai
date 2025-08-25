@@ -22,7 +22,9 @@
       "Bash(go fmt:*)",
       "Bash(git tag:*)",
       "Bash(python3:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(go build:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

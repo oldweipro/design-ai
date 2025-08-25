@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -11,7 +10,67 @@ import (
 	"github.com/oldweipro/design-ai/database"
 	"github.com/oldweipro/design-ai/middleware"
 	"github.com/oldweipro/design-ai/models"
+	"github.com/oldweipro/design-ai/services"
 )
+
+// buildPortfolioResponse 构建Portfolio响应数据，包含图片URL
+func buildPortfolioResponse(portfolio models.Portfolio) models.PortfolioResponse {
+	var tags []string
+	if portfolio.Tags != "" {
+		json.Unmarshal([]byte(portfolio.Tags), &tags)
+	}
+
+	response := models.PortfolioResponse{
+		ID:            portfolio.ID,
+		UserID:        portfolio.UserID,
+		Title:         portfolio.Title,
+		Author:        portfolio.Author,
+		AuthorInitial: getAuthorInitial(portfolio.Author),
+		Description:   portfolio.Description,
+		Content:       portfolio.Content,
+		Category:      portfolio.Category,
+		Tags:          tags,
+		Image:         portfolio.ImageObjectID, // 保持向后兼容
+		ImageURL:      "",                      // 将被下面的代码填充
+		AILevel:       portfolio.AILevel,
+		Likes:         portfolio.Likes,
+		Views:         portfolio.Views,
+		Status:        portfolio.Status,
+		CreatedAt:     portfolio.CreatedAt,
+		UpdatedAt:     portfolio.UpdatedAt,
+	}
+
+	// 生成图片URL
+	if portfolio.ImageObjectID != "" {
+		minioService := services.NewMinIOService()
+		if url, err := minioService.GetFileURL(portfolio.ImageObjectID); err == nil {
+			response.ImageURL = url
+		} else {
+			log.Printf("Failed to generate URL for object %s: %v", portfolio.ImageObjectID, err)
+		}
+	}
+
+	// 添加用户信息
+	if portfolio.User != nil {
+		response.User = &models.UserResponse{
+			ID:       portfolio.User.ID,
+			Username: portfolio.User.Username,
+			Email:    portfolio.User.Email,
+			Avatar:   portfolio.User.Avatar,
+		}
+	}
+
+	return response
+}
+
+// buildPortfolioResponses 批量构建Portfolio响应数据
+func buildPortfolioResponses(portfolios []models.Portfolio) []models.PortfolioResponse {
+	responses := make([]models.PortfolioResponse, len(portfolios))
+	for i, portfolio := range portfolios {
+		responses[i] = buildPortfolioResponse(portfolio)
+	}
+	return responses
+}
 
 func GetPortfolios(c *gin.Context) {
 	var query models.PortfolioQuery
@@ -92,7 +151,7 @@ func GetPortfolios(c *gin.Context) {
 
 	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
-		response := convertToPortfolioResponse(portfolio)
+		response := buildPortfolioResponse(portfolio)
 		responses = append(responses, response)
 	}
 
@@ -138,7 +197,7 @@ func GetPortfolioByID(c *gin.Context) {
 		db.Save(&portfolio)
 	}
 
-	response := convertToPortfolioResponse(portfolio)
+	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
@@ -158,16 +217,16 @@ func CreatePortfolio(c *gin.Context) {
 	tagsJSON, _ := json.Marshal(req.Tags)
 
 	portfolio := models.Portfolio{
-		UserID:      userID,
-		Title:       req.Title,
-		Author:      req.Author,
-		Description: req.Description,
-		Content:     req.Content,
-		Category:    req.Category,
-		Tags:        string(tagsJSON),
-		ImageURL:    req.ImageURL,
-		AILevel:     req.AILevel,
-		Status:      "draft", // 默认为草稿状态，需要管理员审核
+		UserID:        userID,
+		Title:         req.Title,
+		Author:        req.Author,
+		Description:   req.Description,
+		Content:       req.Content,
+		Category:      req.Category,
+		Tags:          string(tagsJSON),
+		ImageObjectID: req.ImageObjectID,
+		AILevel:       req.AILevel,
+		Status:        "draft", // 默认为草稿状态，需要管理员审核
 	}
 
 	db := database.GetDB()
@@ -179,7 +238,7 @@ func CreatePortfolio(c *gin.Context) {
 	// 预加载用户信息
 	db.Preload("User").First(&portfolio, portfolio.ID)
 
-	response := convertToPortfolioResponse(portfolio)
+	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusCreated, gin.H{"data": response})
 }
 
@@ -232,8 +291,8 @@ func UpdatePortfolio(c *gin.Context) {
 		tagsJSON, _ := json.Marshal(req.Tags)
 		portfolio.Tags = string(tagsJSON)
 	}
-	if req.ImageURL != "" {
-		portfolio.ImageURL = req.ImageURL
+	if req.ImageObjectID != "" {
+		portfolio.ImageObjectID = req.ImageObjectID
 	}
 	if req.AILevel != "" {
 		portfolio.AILevel = req.AILevel
@@ -256,7 +315,7 @@ func UpdatePortfolio(c *gin.Context) {
 	// 预加载用户信息
 	db.Preload("User").First(&portfolio, portfolio.ID)
 
-	response := convertToPortfolioResponse(portfolio)
+	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
@@ -357,7 +416,7 @@ func ApprovePortfolio(c *gin.Context) {
 	// 预加载用户信息
 	db.Preload("User").First(&portfolio, portfolio.ID)
 
-	response := convertToPortfolioResponse(portfolio)
+	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Portfolio status updated successfully",
 		"data":    response,
@@ -437,7 +496,7 @@ func GetMyPortfolios(c *gin.Context) {
 
 	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
-		response := convertToPortfolioResponse(portfolio)
+		response := buildPortfolioResponse(portfolio)
 		responses = append(responses, response)
 	}
 
@@ -450,52 +509,13 @@ func GetMyPortfolios(c *gin.Context) {
 	})
 }
 
-func convertToPortfolioResponse(portfolio models.Portfolio) models.PortfolioResponse {
-	var tags []string
-	if portfolio.Tags != "" {
-		if err := json.Unmarshal([]byte(portfolio.Tags), &tags); err != nil {
-			log.Printf("Failed to unmarshal tags for portfolio %s: %v", portfolio.ID, err)
-		}
+// getAuthorInitial 获取作者名字首字母
+func getAuthorInitial(author string) string {
+	if len(author) > 0 {
+		runes := []rune(author)
+		return string(runes[0])
 	}
-
-	authorInitial := ""
-	if len(portfolio.Author) > 0 {
-		runes := []rune(portfolio.Author)
-		authorInitial = string(runes[0])
-	}
-
-	imageDisplay := portfolio.ImageURL
-	if imageDisplay == "" {
-		imageDisplay = fmt.Sprintf("🎨 %s", portfolio.Title)
-	}
-
-	response := models.PortfolioResponse{
-		ID:            portfolio.ID,
-		UserID:        portfolio.UserID,
-		Title:         portfolio.Title,
-		Author:        portfolio.Author,
-		AuthorInitial: authorInitial,
-		Description:   portfolio.Description,
-		Content:       portfolio.Content,
-		Category:      portfolio.Category,
-		Tags:          tags,
-		Image:         imageDisplay,
-		ImageURL:      portfolio.ImageURL,
-		AILevel:       portfolio.AILevel,
-		Likes:         portfolio.Likes,
-		Views:         portfolio.Views,
-		Status:        portfolio.Status,
-		CreatedAt:     portfolio.CreatedAt,
-		UpdatedAt:     portfolio.UpdatedAt,
-	}
-
-	// 如果预加载了用户信息，则添加到响应中
-	if portfolio.User != nil {
-		userResponse := portfolio.User.ToResponse()
-		response.User = &userResponse
-	}
-
-	return response
+	return ""
 }
 
 // 管理员：获取所有作品
@@ -548,7 +568,7 @@ func GetAllPortfolios(c *gin.Context) {
 	// 转换为响应格式
 	responses := make([]models.PortfolioResponse, 0, len(portfolios))
 	for _, portfolio := range portfolios {
-		responses = append(responses, convertToPortfolioResponse(portfolio))
+		responses = append(responses, buildPortfolioResponse(portfolio))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -587,7 +607,7 @@ func UpdatePortfolioStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Portfolio updated successfully",
-		"data":    convertToPortfolioResponse(portfolio),
+		"data":    buildPortfolioResponse(portfolio),
 	})
 }
 

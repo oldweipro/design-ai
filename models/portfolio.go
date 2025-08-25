@@ -8,21 +8,22 @@ import (
 )
 
 type Portfolio struct {
-	ID          string    `json:"id" gorm:"type:char(36);primary_key"`
-	UserID      string    `json:"userId" gorm:"type:char(36);index"` // 关联用户
-	Title       string    `json:"title" gorm:"not null;size:255"`
-	Author      string    `json:"author" gorm:"not null;size:100"`
-	Description string    `json:"description" gorm:"type:text"`
-	Content     string    `json:"content" gorm:"type:longtext"` // 新增详细内容字段
-	Category    string    `json:"category" gorm:"not null;size:50;index"`
-	Tags        string    `json:"tags" gorm:"type:text"` // JSON格式存储标签数组
-	ImageURL    string    `json:"imageUrl" gorm:"size:500"`
-	AILevel     string    `json:"aiLevel" gorm:"size:50"` // AI完全生成, AI辅助设计, 手工设计
-	Likes       int       `json:"likes" gorm:"default:0"`
-	Views       int       `json:"views" gorm:"default:0"`
-	Status      string    `json:"status" gorm:"default:'draft';size:20"` // draft, published, rejected, deleted
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID            string    `json:"id" gorm:"type:char(36);primary_key"`
+	UserID        string    `json:"userId" gorm:"type:char(36);index"` // 关联用户
+	Title         string    `json:"title" gorm:"not null;size:255"`
+	Author        string    `json:"author" gorm:"not null;size:100"`
+	Description   string    `json:"description" gorm:"type:text"`
+	Content       string    `json:"content" gorm:"type:longtext"` // 新增详细内容字段
+	Category      string    `json:"category" gorm:"not null;size:50;index"`
+	Tags          string    `json:"tags" gorm:"type:text"`        // JSON格式存储标签数组
+	ImageObjectID string    `json:"imageObjectId" gorm:"size:36"` // MinIO对象ID
+	ImageURL      string    `json:"imageUrl" gorm:"-"`            // 运行时生成的URL，不存储到数据库
+	AILevel       string    `json:"aiLevel" gorm:"size:50"`       // AI完全生成, AI辅助设计, 手工设计
+	Likes         int       `json:"likes" gorm:"default:0"`
+	Views         int       `json:"views" gorm:"default:0"`
+	Status        string    `json:"status" gorm:"default:'draft';size:20"` // draft, published, rejected, deleted
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 
 	// 关联用户
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID"`
@@ -57,26 +58,26 @@ type PortfolioResponse struct {
 }
 
 type CreatePortfolioRequest struct {
-	Title       string   `json:"title" binding:"required"`
-	Author      string   `json:"author" binding:"required"`
-	Description string   `json:"description"`
-	Content     string   `json:"content"`
-	Category    string   `json:"category" binding:"required"`
-	Tags        []string `json:"tags"`
-	ImageURL    string   `json:"imageUrl"`
-	AILevel     string   `json:"aiLevel" binding:"required"`
+	Title         string   `json:"title" binding:"required"`
+	Author        string   `json:"author" binding:"required"`
+	Description   string   `json:"description"`
+	Content       string   `json:"content"`
+	Category      string   `json:"category" binding:"required"`
+	Tags          []string `json:"tags"`
+	ImageObjectID string   `json:"imageObjectId"`
+	AILevel       string   `json:"aiLevel" binding:"required"`
 }
 
 type UpdatePortfolioRequest struct {
-	Title       string   `json:"title"`
-	Author      string   `json:"author"`
-	Description string   `json:"description"`
-	Content     string   `json:"content"`
-	Category    string   `json:"category"`
-	Tags        []string `json:"tags"`
-	ImageURL    string   `json:"imageUrl"`
-	AILevel     string   `json:"aiLevel"`
-	Status      string   `json:"status"`
+	Title         string   `json:"title"`
+	Author        string   `json:"author"`
+	Description   string   `json:"description"`
+	Content       string   `json:"content"`
+	Category      string   `json:"category"`
+	Tags          []string `json:"tags"`
+	ImageObjectID string   `json:"imageObjectId"`
+	AILevel       string   `json:"aiLevel"`
+	Status        string   `json:"status"`
 }
 
 // 管理员审核作品请求

@@ -1,0 +1,57 @@
+{{define "layouts/dashboard"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - DesignAI</title>
+    
+    <!-- CSS文件 -->
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    {{block "extra-css" .}}{{end}}
+    
+    <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="sidebar">
+        {{template "components/sidebar" .}}
+    </aside>
+
+    <!-- 主内容区域 -->
+    <div id="mainContent" class="main-content">
+        <!-- 顶部栏 -->
+        <header class="top-bar">
+            {{template "components/topbar" .}}
+        </header>
+
+        <!-- 页面内容 -->
+        <div class="dashboard-content">
+            {{block "dashboard-content" .}}
+            <!-- 仪表板具体内容 -->
+            {{end}}
+        </div>
+    </div>
+
+    <!-- 基础JavaScript -->
+    <script src="/assets/js/common.js"></script>
+    <script src="/assets/js/dashboard.js"></script>
+    <script src="/assets/js/minio.js"></script>
+    {{block "extra-js" .}}{{end}}
+
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查认证状态
+            if (!AuthManager.checkAuth()) {
+                return;
+            }
+            
+            // 页面特定初始化
+            {{block "page-init" .}}{{end}}
+        });
+    </script>
+</body>
+</html>
+{{end}}

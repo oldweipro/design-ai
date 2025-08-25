@@ -1,0 +1,108 @@
+{{define "layouts/base"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - DesignAI</title>
+    
+    <!-- CSS文件 -->
+    <link rel="stylesheet" href="/assets/css/common.css">
+    {{block "extra-css" .}}{{end}}
+    
+    <!-- 元信息 -->
+    <meta name="description" content="DesignAI - AI驱动的设计作品展示平台">
+    <meta name="keywords" content="设计,AI,作品展示,创意,设计师">
+    <meta name="author" content="DesignAI">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/assets/js/common.js" as="script">
+</head>
+<body>
+    {{block "header" .}}
+    <!-- 默认头部，可以被覆盖 -->
+    <header class="site-header">
+        <nav class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <div class="brand-icon">🎨</div>
+                    <span class="brand-text">DesignAI</span>
+                </a>
+            </div>
+            
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                
+                {{if .User}}
+                <div class="user-menu">
+                    <a href="/dashboard" class="btn btn-primary">进入仪表板</a>
+                </div>
+                {{else}}
+                <div class="auth-actions">
+                    <a href="/auth" class="btn btn-secondary">登录</a>
+                    <a href="/auth#register" class="btn btn-primary">注册</a>
+                </div>
+                {{end}}
+            </div>
+        </nav>
+    </header>
+    {{end}}
+
+    <main class="main-content">
+        {{block "content" .}}
+        <!-- 主要内容区域 -->
+        {{end}}
+    </main>
+
+    {{block "footer" .}}
+    <!-- 默认页脚，可以被覆盖 -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand-icon">🎨</div>
+                    <span class="brand-text">DesignAI</span>
+                </div>
+                
+                <div class="footer-links">
+                    <a href="/about">关于我们</a>
+                    <a href="/privacy">隐私政策</a>
+                    <a href="/terms">服务条款</a>
+                </div>
+                
+                <div class="footer-social">
+                    <a href="#" aria-label="微博">📱</a>
+                    <a href="#" aria-label="微信">💬</a>
+                    <a href="#" aria-label="邮箱">📧</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; {{yearNow}} DesignAI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    {{end}}
+
+    <!-- Toast通知容器 -->
+    <div id="toast-container"></div>
+
+    <!-- 基础JavaScript -->
+    <script src="/assets/js/common.js"></script>
+    {{block "extra-js" .}}{{end}}
+
+    <!-- 页面初始化脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面特定功能
+            {{block "page-init" .}}{{end}}
+        });
+    </script>
+</body>
+</html>
+{{end}}

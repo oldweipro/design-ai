@@ -1,0 +1,71 @@
+{{define "components/sidebar"}}
+<div class="sidebar-header">
+    <a href="/" class="sidebar-logo">
+        <div class="logo-icon">🎨</div>
+        <span>DesignAI</span>
+    </a>
+</div>
+
+<nav class="sidebar-nav">
+    <!-- 主要功能 -->
+    <div class="nav-section">
+        <div class="nav-title">主要功能</div>
+        <a href="#dashboard" class="nav-item active" data-section="dashboard">
+            <span class="nav-icon">📊</span>
+            <span>仪表板</span>
+        </a>
+        <a href="#my-portfolios" class="nav-item" data-section="my-portfolios">
+            <span class="nav-icon">🎨</span>
+            <span>我的作品</span>
+        </a>
+        <a href="#create-portfolio" class="nav-item" data-section="create-portfolio">
+            <span class="nav-icon">➕</span>
+            <span>创建作品</span>
+        </a>
+    </div>
+
+    <!-- 管理员功能 -->
+    <div class="nav-section" id="adminSection" style="display: none;">
+        <div class="nav-title">管理员功能</div>
+        <a href="#user-management" class="nav-item" data-section="user-management">
+            <span class="nav-icon">👥</span>
+            <span>用户管理</span>
+        </a>
+        <a href="#portfolio-review" class="nav-item" data-section="portfolio-review">
+            <span class="nav-icon">🔍</span>
+            <span>作品审核</span>
+        </a>
+        <a href="#system-settings" class="nav-item" data-section="system-settings">
+            <span class="nav-icon">🛠️</span>
+            <span>系统设置</span>
+        </a>
+        <a href="#minio-settings" class="nav-item" data-section="minio-settings">
+            <span class="nav-icon">📁</span>
+            <span>MinIO设置</span>
+        </a>
+    </div>
+
+    <!-- 其他 -->
+    <div class="nav-section">
+        <div class="nav-title">其他</div>
+        <a href="#settings" class="nav-item" data-section="settings">
+            <span class="nav-icon">⚙️</span>
+            <span>设置</span>
+        </a>
+        <a href="#profile" class="nav-item" data-section="profile">
+            <span class="nav-icon">👤</span>
+            <span>个人资料</span>
+        </a>
+    </div>
+</nav>
+
+<div class="sidebar-footer">
+    <div class="user-profile">
+        <div id="userAvatar" class="user-avatar">U</div>
+        <div class="user-info">
+            <h4 id="userName">用户名</h4>
+            <p id="userStatus">用户</p>
+        </div>
+    </div>
+</div>
+{{end}}

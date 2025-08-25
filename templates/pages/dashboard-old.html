@@ -1,0 +1,2798 @@
+{{define "pages/dashboard"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户仪表板 - DesignAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-accent: rgba(0, 0, 0, 0.02);
+            --text-primary: #1a202c;
+            --text-secondary: #718096;
+            --text-accent: #4299e1;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-medium: rgba(0, 0, 0, 0.1);
+            --shadow-heavy: rgba(0, 0, 0, 0.2);
+            --ai-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --error-color: #f56565;
+            --info-color: #4299e1;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-accent: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-accent: #63b3ed;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-light: rgba(0, 0, 0, 0.3);
+            --shadow-medium: rgba(0, 0, 0, 0.5);
+            --shadow-heavy: rgba(0, 0, 0, 0.7);
+            --ai-gradient: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+            --card-bg: rgba(26, 26, 46, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--ai-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            padding: 0 2rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--text-primary);
+            background: var(--bg-accent);
+            border-left-color: var(--text-accent);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+        }
+
+        .sidebar-footer {
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-accent);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-profile:hover {
+            background: var(--bg-secondary);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-info h4 {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .user-info p {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            background: var(--bg-secondary);
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* 顶部栏 */
+        .top-bar {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--ai-gradient);
+            color: white;
+            box-shadow: 0 4px 15px var(--shadow-light);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-medium);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-accent);
+        }
+
+        /* 仪表板内容 */
+        .dashboard-content {
+            padding: 2rem;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--ai-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px var(--shadow-medium);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            opacity: 0.6;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+
+        .stat-change.negative {
+            color: var(--error-color);
+        }
+
+        /* 主要部分 */
+        .main-sections {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* 作品列表 */
+        .portfolio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .portfolio-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-accent);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .portfolio-item:hover {
+            background: var(--bg-secondary);
+            transform: translateX(5px);
+        }
+
+        .portfolio-image {
+            width: 80px;
+            height: 80px;
+            background: var(--ai-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .portfolio-info {
+            flex: 1;
+        }
+
+        .portfolio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .portfolio-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .portfolio-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-published {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-draft {
+            background: rgba(237, 137, 54, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-rejected {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--error-color);
+        }
+
+        /* 活动列表 */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-accent);
+            border-radius: 12px;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .activity-time {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .empty-description {
+            margin-bottom: 2rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .main-sections {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stat-card {
+                padding: 1.5rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .top-bar {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.4rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-accent);
+            border-radius: 50%;
+            animation: loadingDot 1.4s ease-in-out infinite both;
+            margin: 0 0.2rem;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDot {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+        }
+
+        /* 用户管理样式 */
+        .user-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .user-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .user-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .user-avatar-large {
+            width: 50px;
+            height: 50px;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-details h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-details p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.25rem 0;
+        }
+
+        .user-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+
+        .status-pending {
+            background: rgba(237, 137, 54, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .status-approved {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .status-rejected {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+        }
+
+        .status-banned {
+            background: rgba(0, 0, 0, 0.1);
+            color: #666;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-logo">
+                <div class="logo-icon">AI</div>
+                <span>DesignAI</span>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-title">主要功能</div>
+                <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>仪表板</span>
+                </a>
+                <a href="#my-portfolios" class="nav-item" data-section="my-portfolios">
+                    <span class="nav-icon">🎨</span>
+                    <span>我的作品</span>
+                </a>
+                <a href="#create-portfolio" class="nav-item" data-section="create-portfolio">
+                    <span class="nav-icon">➕</span>
+                    <span>创建作品</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">设置</div>
+                <a href="#profile" class="nav-item" data-section="profile">
+                    <span class="nav-icon">👤</span>
+                    <span>个人资料</span>
+                </a>
+                <a href="#settings" class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>设置</span>
+                </a>
+            </div>
+
+            <!-- 管理员功能区域 -->
+            <div class="nav-section" id="adminSection" style="display: none;">
+                <div class="nav-title">管理员功能</div>
+                <a href="#user-management" class="nav-item" data-section="user-management">
+                    <span class="nav-icon">👥</span>
+                    <span>用户管理</span>
+                </a>
+                <a href="#portfolio-review" class="nav-item" data-section="portfolio-review">
+                    <span class="nav-icon">🔍</span>
+                    <span>作品审核</span>
+                </a>
+                <a href="#system-settings" class="nav-item" data-section="system-settings">
+                    <span class="nav-icon">🛠️</span>
+                    <span>系统设置</span>
+                </a>
+                <a href="#minio-settings" class="nav-item" data-section="minio-settings">
+                    <span class="nav-icon">📁</span>
+                    <span>MinIO设置</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">其他</div>
+                <a href="/" class="nav-item">
+                    <span class="nav-icon">🏠</span>
+                    <span>返回首页</span>
+                </a>
+                <a href="#" class="nav-item" onclick="logout()">
+                    <span class="nav-icon">🚪</span>
+                    <span>退出登录</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile" onclick="showSection('profile')">
+                <div class="user-avatar" id="userAvatar"></div>
+                <div class="user-info">
+                    <h4 id="userName">加载中...</h4>
+                    <p id="userStatus">用户</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <main class="main-content" id="mainContent">
+        <!-- 顶部栏 -->
+        <div class="top-bar">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="page-title" id="pageTitle">仪表板</h1>
+            </div>
+            <div class="top-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <a href="#create-portfolio" class="btn btn-primary" onclick="showSection('create-portfolio')">
+                    <span>➕</span>
+                    <span>创建作品</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 仪表板内容 -->
+        <div class="dashboard-content">
+            <!-- 仪表板首页 -->
+            <div id="dashboard-section" class="content-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h3 class="stat-title">总作品数</h3>
+                            <span class="stat-icon">🎨</span>
+                        </div>
+                        <div class="stat-value" id="totalPortfolios">0</div>
+                        <div class="stat-change positive">
+                            <span>↗️</span>
+                            <span id="portfolioChange">+0</span>
+                            <span>本月新增</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h3 class="stat-title">总浏览量</h3>
+                            <span class="stat-icon">👁️</span>
+                        </div>
+                        <div class="stat-value" id="totalViews">0</div>
+                        <div class="stat-change positive">
+                            <span>↗️</span>
+                            <span id="viewsChange">+0%</span>
+                            <span>较上月</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h3 class="stat-title">总点赞数</h3>
+                            <span class="stat-icon">❤️</span>
+                        </div>
+                        <div class="stat-value" id="totalLikes">0</div>
+                        <div class="stat-change positive">
+                            <span>↗️</span>
+                            <span id="likesChange">+0%</span>
+                            <span>较上月</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h3 class="stat-title">发布作品</h3>
+                            <span class="stat-icon">✅</span>
+                        </div>
+                        <div class="stat-value" id="publishedPortfolios">0</div>
+                        <div class="stat-change">
+                            <span id="draftCount">0</span>
+                            <span>草稿待发布</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="main-sections">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2 class="section-title">最近作品</h2>
+                            <a href="#my-portfolios" class="btn btn-secondary" onclick="showSection('my-portfolios')">查看全部</a>
+                        </div>
+                        <div class="portfolio-list" id="recentPortfolios">
+                            <!-- 作品列表将通过JavaScript填充 -->
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <h2 class="section-title">最近活动</h2>
+                        </div>
+                        <div class="activity-list" id="recentActivity">
+                            <!-- 活动列表将通过JavaScript填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的作品页面 -->
+            <div id="my-portfolios-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">我的作品集</h2>
+                        <div style="display: flex; gap: 1rem;">
+                            <select id="statusFilter" class="btn btn-secondary">
+                                <option value="">所有状态</option>
+                                <option value="published">已发布</option>
+                                <option value="draft">草稿</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                            <a href="#create-portfolio" class="btn btn-primary" onclick="showSection('create-portfolio')">
+                                <span>➕</span>
+                                <span>新建作品</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="portfolio-list" id="allPortfolios">
+                        <!-- 作品列表 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 创建作品页面 -->
+            <div id="create-portfolio-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">创建新作品</h2>
+                    </div>
+                    
+                    <form id="createPortfolioForm" style="max-width: 800px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品标题</label>
+                                <input type="text" class="form-input" name="title" placeholder="输入作品标题..." required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品分类</label>
+                                <select class="form-input" name="category" required>
+                                    <option value="">选择分类</option>
+                                    <option value="ai">AI生成</option>
+                                    <option value="ui">UI/UX设计</option>
+                                    <option value="web">网页设计</option>
+                                    <option value="mobile">移动应用</option>
+                                    <option value="brand">品牌设计</option>
+                                    <option value="3d">3D渲染</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">作品描述</label>
+                            <textarea class="form-input" name="description" rows="3" placeholder="描述您的设计理念和创作过程..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">详细内容</label>
+                            <textarea class="form-input" name="content" rows="6" placeholder="详细介绍作品的设计思路、技术实现、创意灵感等..."></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">AI参与程度</label>
+                                <select class="form-input" name="aiLevel" required>
+                                    <option value="">选择AI参与程度</option>
+                                    <option value="手工设计">完全手工设计</option>
+                                    <option value="AI辅助设计">AI辅助设计</option>
+                                    <option value="AI完全生成">AI完全生成</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品标签</label>
+                                <input type="text" class="form-input" name="tags" placeholder="输入标签，用逗号分隔...">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品图片URL</label>
+                                <input type="url" class="form-input" name="imageUrl" placeholder="https://example.com/image.jpg">
+                            </div>
+<!--                            <div class="form-group">-->
+<!--                                <label class="form-label">发布状态</label>-->
+<!--                                <select class="form-input" name="status" id="createStatus" required>-->
+<!--                                    <option value="draft">保存为草稿</option>-->
+<!--                                    <option value="published">立即发布</option>-->
+<!--                                </select>-->
+<!--                            </div>-->
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: space-between;">
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('createPortfolioForm').reset()">重置</button>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                                    <span>📝</span>
+                                    <span>保存草稿</span>
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <span>🚀</span>
+                                    <span>创建作品</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 编辑作品页面 -->
+            <div id="edit-portfolio-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">编辑作品</h2>
+                        <button class="btn btn-secondary" onclick="showSection('my-portfolios')">
+                            <span>←</span>
+                            <span>返回作品列表</span>
+                        </button>
+                    </div>
+                    
+                    <form id="editPortfolioForm" style="max-width: 800px;">
+                        <input type="hidden" id="editPortfolioId" name="id">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品标题</label>
+                                <input type="text" class="form-input" name="title" id="editTitle" placeholder="输入作品标题..." required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品分类</label>
+                                <select class="form-input" name="category" id="editCategory" required>
+                                    <option value="">选择分类</option>
+                                    <option value="ai">AI生成</option>
+                                    <option value="ui">UI/UX设计</option>
+                                    <option value="web">网页设计</option>
+                                    <option value="mobile">移动应用</option>
+                                    <option value="brand">品牌设计</option>
+                                    <option value="3d">3D渲染</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">作品描述</label>
+                            <textarea class="form-input" name="description" id="editDescription" rows="3" placeholder="描述您的设计理念和创作过程..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">详细内容</label>
+                            <textarea class="form-input" name="content" id="editContent" rows="6" placeholder="详细介绍作品的设计思路、技术实现、创意灵感等..."></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">AI参与程度</label>
+                                <select class="form-input" name="aiLevel" id="editAiLevel" required>
+                                    <option value="">选择AI参与程度</option>
+                                    <option value="手工设计">完全手工设计</option>
+                                    <option value="AI辅助设计">AI辅助设计</option>
+                                    <option value="AI完全生成">AI完全生成</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品标签</label>
+                                <input type="text" class="form-input" name="tags" id="editTags" placeholder="输入标签，用逗号分隔...">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label">作品图片URL</label>
+                                <input type="url" class="form-input" name="imageUrl" id="editImageUrl" placeholder="https://example.com/image.jpg">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">作品状态</label>
+                                <select class="form-input" name="status" id="editStatus" required>
+                                    <option value="draft">草稿</option>
+                                    <option value="published">已发布</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: space-between;">
+                            <button type="button" class="btn btn-secondary" onclick="deletePortfolioFromEdit()">
+                                <span>🗑️</span>
+                                <span>删除作品</span>
+                            </button>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn btn-secondary" onclick="showSection('my-portfolios')">取消</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <span>💾</span>
+                                    <span>保存更改</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 个人资料页面 -->
+            <div id="profile-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">个人资料</h2>
+                    </div>
+                    
+                    <form id="profileForm" style="max-width: 600px;">
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-input" name="username" id="profileUsername">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">邮箱地址</label>
+                            <input type="email" class="form-input" id="profileEmail" disabled>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">头像URL</label>
+                            <input type="url" class="form-input" name="avatar" id="profileAvatar" placeholder="https://example.com/avatar.jpg">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label">个人简介</label>
+                            <textarea class="form-input" name="bio" id="profileBio" rows="4" placeholder="介绍一下自己..."></textarea>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="loadProfile()">重置</button>
+                            <button type="submit" class="btn btn-primary">
+                                <span>💾</span>
+                                <span>保存更改</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="user-management-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">用户管理</h2>
+                        <div class="section-actions">
+                            <select id="userStatusFilter" class="form-input" style="width: auto; margin-right: 1rem;">
+                                <option value="">全部状态</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已批准</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="banned">已封禁</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="loadUsers()">
+                                <span>🔄</span>
+                                <span>刷新</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 统计卡片 -->
+                    <div class="stats-grid" style="margin-bottom: 2rem;">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>👥 总用户数</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="totalUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="usersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>⏳ 待审核</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="pendingUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="pendingUsersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span>✅ 已批准</span>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="approvedUsersCount">0</div>
+                                <div class="stat-change">
+                                    <span id="approvedUsersChange">+0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户列表 -->
+                    <div class="user-list" id="usersList">
+                        <!-- 用户将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 作品审核页面 -->
+            <div id="portfolio-review-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">作品审核</h2>
+                        <div class="section-actions">
+                            <select id="portfolioReviewFilter" class="form-input" style="width: auto; margin-right: 1rem;">
+                                <option value="">全部状态</option>
+                                <option value="draft">草稿</option>
+                                <option value="published">已发布</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="loadAllPortfolios()">
+                                <span>🔄</span>
+                                <span>刷新</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="portfolio-list" id="reviewPortfoliosList">
+                        <!-- 作品将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置页面 -->
+            <div id="system-settings-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">系统设置</h2>
+                    </div>
+                    
+                    <div style="max-width: 800px;">
+                        <div class="form-group">
+                            <h3>网站设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="form-label">网站标题</label>
+                                <input type="text" class="form-input" value="DesignAI" placeholder="网站标题">
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <label class="form-label">网站描述</label>
+                                <textarea class="form-input" rows="3" placeholder="网站描述">AI驱动的设计作品展示平台</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 2rem;">
+                            <h3>用户设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" checked> 允许用户注册
+                                </label>
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox"> 新用户需要管理员审核
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 2rem;">
+                            <h3>作品设置</h3>
+                            <div style="margin-top: 1rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox"> 新作品需要审核后发布
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-primary">
+                                <span>💾</span>
+                                <span>保存设置</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MinIO设置页面 -->
+            <div id="minio-settings-section" class="content-section" style="display: none;">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">MinIO存储配置</h2>
+                        <button class="btn btn-primary" onclick="showAddMinioConfig()">
+                            <span>➕</span>
+                            <span>添加配置</span>
+                        </button>
+                    </div>
+                    
+                    <!-- MinIO配置列表 -->
+                    <div id="minioConfigsList">
+                        <!-- 配置列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 添加/编辑MinIO配置模态框 -->
+                <div id="minioConfigModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title" id="minioModalTitle">添加MinIO配置</h3>
+                            <button class="close-btn" onclick="closeMinioModal()">&times;</button>
+                        </div>
+                        
+                        <form id="minioConfigForm">
+                            <input type="hidden" id="minioConfigId" name="id">
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">配置名称</label>
+                                    <input type="text" class="form-input" name="name" id="minioName" placeholder="例如：生产环境MinIO" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">服务端点</label>
+                                    <input type="text" class="form-input" name="endpoint" id="minioEndpoint" placeholder="例如：minio.example.com:9000" required>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">访问密钥 (Access Key)</label>
+                                    <input type="text" class="form-input" name="access_key" id="minioAccessKey" placeholder="访问密钥" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">秘密密钥 (Secret Key)</label>
+                                    <input type="password" class="form-input" name="secret_key" id="minioSecretKey" placeholder="秘密密钥">
+                                    <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;" id="secretKeyHint">编辑时留空表示不更改现有密钥</small>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">存储桶名称</label>
+                                    <input type="text" class="form-input" name="bucket_name" id="minioBucket" placeholder="例如：design-files" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">区域</label>
+                                    <input type="text" class="form-input" name="region" id="minioRegion" placeholder="us-east-1" value="us-east-1">
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">URL过期时间（秒）</label>
+                                    <input type="number" class="form-input" name="url_expiry" id="minioUrlExpiry" placeholder="3600" value="3600" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">配置选项</label>
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="use_ssl" id="minioUseSSL" checked> 使用SSL/HTTPS
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="is_private" id="minioIsPrivate"> 私有存储桶
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="is_active" id="minioIsActive"> 设为激活配置
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label">描述（可选）</label>
+                                <textarea class="form-input" name="description" id="minioDescription" rows="3" placeholder="配置描述..."></textarea>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; justify-content: space-between; margin-top: 2rem;">
+                                <button type="button" class="btn btn-secondary" onclick="testMinioConnection()">
+                                    <span>🔧</span>
+                                    <span>测试连接</span>
+                                </button>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="closeMinioModal()">取消</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <span>💾</span>
+                                        <span>保存配置</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 全局样式 -->
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--text-accent);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+            background: var(--bg-primary);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .content-section {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let currentTheme = 'light';
+        let portfolioData = [];
+        const API_BASE_URL = '/api/v1';
+
+        // 获取认证token
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        // 获取认证请求头
+        function getAuthHeaders() {
+            const token = getAuthToken();
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+
+        // API请求封装
+        async function apiRequest(url, options = {}) {
+            try {
+                const response = await fetch(API_BASE_URL + url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders(),
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API request failed:', error);
+                throw error;
+            }
+        }
+
+        // 检查认证状态
+        function checkAuth() {
+            const token = getAuthToken();
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                window.location.href = '/auth';
+                return false;
+            }
+            
+            try {
+                currentUser = JSON.parse(userStr);
+                updateUserInfo();
+                checkAdminAccess();
+                return true;
+            } catch (error) {
+                console.error('Failed to parse user data:', error);
+                logout();
+                return false;
+            }
+        }
+
+        // 检查管理员权限并显示/隐藏管理员功能
+        function checkAdminAccess() {
+            const adminSection = document.getElementById('adminSection');
+            if (currentUser && currentUser.role === 'admin') {
+                adminSection.style.display = 'block';
+            } else {
+                adminSection.style.display = 'none';
+            }
+        }
+
+        // 更新用户信息显示
+        function updateUserInfo() {
+            if (!currentUser) return;
+            
+            document.getElementById('userName').textContent = currentUser.username;
+            document.getElementById('userStatus').textContent = currentUser.role === 'admin' ? '管理员' : '用户';
+            document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/auth';
+        }
+
+        // 主题切换
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (currentTheme === 'light') {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '☀️';
+                currentTheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                currentTheme = 'light';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                toggleTheme();
+            }
+        }
+
+        // 侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // 显示指定页面
+        function showSection(sectionName) {
+            // 更新导航项激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const activeNavItem = document.querySelector(`[data-section="${sectionName}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+
+            // 隐藏所有内容区域
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // 显示选定的内容区域
+            const targetSection = document.getElementById(`${sectionName}-section`);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+
+            // 更新页面标题
+            const titles = {
+                'dashboard': '仪表板',
+                'my-portfolios': '我的作品',
+                'create-portfolio': '创建作品',
+                'edit-portfolio': '编辑作品',
+                'profile': '个人资料',
+                'settings': '设置',
+                'user-management': '用户管理',
+                'portfolio-review': '作品审核',
+                'system-settings': '系统设置',
+                'minio-settings': 'MinIO设置'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[sectionName] || '仪表板';
+
+            // 根据页面加载相应数据
+            switch (sectionName) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'my-portfolios':
+                    loadMyPortfolios();
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+                case 'user-management':
+                    loadUsers();
+                    break;
+                case 'portfolio-review':
+                    loadAllPortfolios();
+                    break;
+                case 'system-settings':
+                    // 系统设置页面静态显示，不需要加载数据
+                    break;
+                case 'minio-settings':
+                    loadMinioConfigs();
+                    break;
+            }
+
+            // 关闭移动端侧边栏
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        }
+
+        // 加载仪表板数据
+        async function loadDashboardData() {
+            try {
+                // 加载用户的作品统计
+                await loadMyPortfolios();
+                
+                // 计算统计数据
+                const totalPortfolios = portfolioData.length;
+                const publishedPortfolios = portfolioData.filter(p => p.status === 'published').length;
+                const draftCount = portfolioData.filter(p => p.status === 'draft').length;
+                const totalViews = portfolioData.reduce((sum, p) => sum + (p.views || 0), 0);
+                const totalLikes = portfolioData.reduce((sum, p) => sum + (p.likes || 0), 0);
+
+                // 更新统计卡片
+                document.getElementById('totalPortfolios').textContent = totalPortfolios;
+                document.getElementById('publishedPortfolios').textContent = publishedPortfolios;
+                document.getElementById('draftCount').textContent = draftCount;
+                document.getElementById('totalViews').textContent = totalViews;
+                document.getElementById('totalLikes').textContent = totalLikes;
+
+                // 显示最近作品（最新5个）
+                const recentPortfolios = portfolioData.slice(0, 5);
+                renderPortfolioList('recentPortfolios', recentPortfolios);
+
+                // 生成模拟活动数据
+                renderRecentActivity();
+
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                showToast('加载仪表板数据失败', 'error');
+            }
+        }
+
+        // 加载我的作品
+        async function loadMyPortfolios() {
+            try {
+                const result = await apiRequest('/my-portfolios');
+                portfolioData = result.data || [];
+                
+                // 如果在作品页面，渲染作品列表
+                if (document.getElementById('my-portfolios-section').style.display !== 'none') {
+                    renderPortfolioList('allPortfolios', portfolioData);
+                }
+                
+                return portfolioData;
+            } catch (error) {
+                console.error('Failed to load portfolios:', error);
+                showToast('加载作品失败', 'error');
+                return [];
+            }
+        }
+
+        // 渲染作品列表
+        function renderPortfolioList(containerId, portfolios) {
+            const container = document.getElementById(containerId);
+            
+            if (!portfolios || portfolios.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎨</div>
+                        <h3 class="empty-title">暂无作品</h3>
+                        <p class="empty-description">您还没有创建任何作品</p>
+                        <button class="btn btn-primary" onclick="showSection('create-portfolio')">
+                            <span>➕</span>
+                            <span>创建第一个作品</span>
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = portfolios.map(portfolio => {
+                const statusClass = {
+                    'published': 'status-published',
+                    'draft': 'status-draft',
+                    'rejected': 'status-rejected'
+                }[portfolio.status] || 'status-draft';
+
+                const statusText = {
+                    'published': '已发布',
+                    'draft': '草稿',
+                    'rejected': '已拒绝'
+                }[portfolio.status] || '草稿';
+
+                return `
+                    <div class="portfolio-item" onclick="editPortfolio('${portfolio.id}')">
+                        <div class="portfolio-image">
+                            ${portfolio.imageUrl ? `<img src="${portfolio.imageUrl}" alt="${portfolio.title}">` : '🎨'}
+                        </div>
+                        <div class="portfolio-info">
+                            <h4 class="portfolio-title">${portfolio.title}</h4>
+                            <div class="portfolio-meta">
+                                <span>📅 ${new Date(portfolio.createdAt).toLocaleDateString()}</span>
+                                <span>👁️ ${portfolio.views || 0}</span>
+                                <span>❤️ ${portfolio.likes || 0}</span>
+                                <span class="portfolio-status ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 渲染最近活动
+        function renderRecentActivity() {
+            const activities = [
+                {
+                    icon: '🎨',
+                    text: '创建了新作品',
+                    time: '2小时前'
+                },
+                {
+                    icon: '❤️',
+                    text: '作品获得了新的点赞',
+                    time: '5小时前'
+                },
+                {
+                    icon: '👁️',
+                    text: '作品浏览量增加',
+                    time: '1天前'
+                },
+                {
+                    icon: '✅',
+                    text: '作品通过审核并发布',
+                    time: '2天前'
+                }
+            ];
+
+            const container = document.getElementById('recentActivity');
+            container.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">${activity.icon}</div>
+                    <div class="activity-content">
+                        <div class="activity-text">${activity.text}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 创建新作品
+        async function handleCreatePortfolio(formData) {
+            try {
+                const portfolioData = {
+                    title: formData.get('title'),
+                    author: currentUser.username,
+                    description: formData.get('description'),
+                    content: formData.get('content'),
+                    category: formData.get('category'),
+                    tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
+                    imageUrl: formData.get('imageUrl'),
+                    aiLevel: formData.get('aiLevel'),
+                    status: formData.get('status') || 'draft'
+                };
+
+                const result = await apiRequest('/portfolios', {
+                    method: 'POST',
+                    body: JSON.stringify(portfolioData)
+                });
+
+                showToast('作品创建成功！', 'success');
+                document.getElementById('createPortfolioForm').reset();
+                
+                // 刷新作品列表
+                await loadMyPortfolios();
+                showSection('my-portfolios');
+
+            } catch (error) {
+                console.error('Failed to create portfolio:', error);
+                showToast('创建作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 保存草稿（快捷方式）
+        function saveDraft() {
+            // 设置状态为草稿
+            document.getElementById('createStatus').value = 'draft';
+            
+            // 触发表单提交
+            const form = document.getElementById('createPortfolioForm');
+            const formData = new FormData(form);
+            handleCreatePortfolio(formData);
+        }
+
+        // 加载用户资料
+        async function loadProfile() {
+            try {
+                const result = await apiRequest('/profile');
+                const user = result.data;
+
+                document.getElementById('profileUsername').value = user.username || '';
+                document.getElementById('profileEmail').value = user.email || '';
+                document.getElementById('profileAvatar').value = user.avatar || '';
+                document.getElementById('profileBio').value = user.bio || '';
+
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+                showToast('加载资料失败', 'error');
+            }
+        }
+
+        // 更新用户资料
+        async function handleUpdateProfile(formData) {
+            try {
+                const updateData = {
+                    username: formData.get('username'),
+                    avatar: formData.get('avatar'),
+                    bio: formData.get('bio')
+                };
+
+                const result = await apiRequest('/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                // 更新本地存储的用户信息
+                currentUser = { ...currentUser, ...result.data };
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                updateUserInfo();
+
+                showToast('资料更新成功！', 'success');
+
+            } catch (error) {
+                console.error('Failed to update profile:', error);
+                showToast('更新资料失败：' + error.message, 'error');
+            }
+        }
+
+        // 处理作品更新
+        async function handleUpdatePortfolio(formData) {
+            try {
+                const portfolioId = formData.get('id');
+                const updateData = {
+                    title: formData.get('title'),
+                    author: currentUser.username,
+                    description: formData.get('description'),
+                    content: formData.get('content'),
+                    category: formData.get('category'),
+                    tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
+                    imageUrl: formData.get('imageUrl'),
+                    aiLevel: formData.get('aiLevel'),
+                    status: formData.get('status')
+                };
+
+                const result = await apiRequest(`/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                showToast('作品更新成功！', 'success');
+                
+                // 刷新作品列表
+                await loadMyPortfolios();
+                showSection('my-portfolios');
+
+            } catch (error) {
+                console.error('Failed to update portfolio:', error);
+                showToast('更新作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 从编辑页面删除作品
+        async function deletePortfolioFromEdit() {
+            const portfolioId = document.getElementById('editPortfolioId').value;
+            
+            if (!portfolioId) {
+                showToast('未找到作品ID', 'error');
+                return;
+            }
+
+            if (!confirm('确定要删除这个作品吗？此操作不可撤销。')) {
+                return;
+            }
+
+            try {
+                await apiRequest(`/portfolios/${portfolioId}`, {
+                    method: 'DELETE'
+                });
+
+                showToast('作品删除成功！', 'success');
+                
+                // 刷新作品列表并返回作品列表页面
+                await loadMyPortfolios();
+                showSection('my-portfolios');
+
+            } catch (error) {
+                console.error('Failed to delete portfolio:', error);
+                showToast('删除作品失败：' + error.message, 'error');
+            }
+        }
+
+        // ===== 用户管理功能 =====
+
+        // 加载所有用户
+        async function loadUsers() {
+            try {
+                const result = await apiRequest('/admin/users');
+                const users = result.data || [];
+                
+                // 更新统计数据
+                updateUserStats(users);
+                
+                // 渲染用户列表
+                renderUserList(users);
+                
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                showToast('加载用户列表失败', 'error');
+            }
+        }
+
+        // 更新用户统计
+        function updateUserStats(users) {
+            const totalUsers = users.length;
+            const pendingUsers = users.filter(u => u.status === 'pending').length;
+            const approvedUsers = users.filter(u => u.status === 'approved').length;
+            
+            document.getElementById('totalUsersCount').textContent = totalUsers;
+            document.getElementById('pendingUsersCount').textContent = pendingUsers;
+            document.getElementById('approvedUsersCount').textContent = approvedUsers;
+        }
+
+        // 渲染用户列表
+        function renderUserList(users) {
+            const container = document.getElementById('usersList');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <h3>暂无用户数据</h3>
+                        <p>当前系统中没有用户记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = users.map(user => {
+                const statusClass = {
+                    'pending': 'status-pending',
+                    'approved': 'status-approved',
+                    'rejected': 'status-rejected',
+                    'banned': 'status-banned'
+                }[user.status] || 'status-pending';
+
+                const statusText = {
+                    'pending': '待审核',
+                    'approved': '已批准',
+                    'rejected': '已拒绝',
+                    'banned': '已封禁'
+                }[user.status] || '待审核';
+
+                return `
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-avatar-large">${user.username.charAt(0).toUpperCase()}</div>
+                            <div class="user-details">
+                                <h4>${user.username}</h4>
+                                <p>📧 ${user.email}</p>
+                                <p>📅 注册时间：${new Date(user.createdAt).toLocaleDateString()}</p>
+                                <p>🎨 作品数：${user.portfolio_count || 0}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div class="user-status ${statusClass}">${statusText}</div>
+                            <div class="user-actions">
+                                ${user.status === 'pending' ? `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="approveUser('${user.id}')">✅ 批准</button>
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="rejectUser('${user.id}')">❌ 拒绝</button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="editUser('${user.id}')">✏️ 编辑</button>
+                                ${user.status !== 'banned' ? `
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="banUser('${user.id}')">🚫 封禁</button>
+                                ` : `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="unbanUser('${user.id}')">🔓 解禁</button>
+                                `}
+                                <button class="btn btn-sm" style="background: var(--warning-color); color: white;" onclick="resetPassword('${user.id}')">🔑 重置密码</button>
+                                <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="deleteUser('${user.id}')">🗑️ 删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 批准用户
+        async function approveUser(userId) {
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'approved' })
+                });
+                
+                showToast('用户批准成功', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to approve user:', error);
+                showToast('批准用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 拒绝用户
+        async function rejectUser(userId) {
+            if (!confirm('确定要拒绝这个用户吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                
+                showToast('用户已拒绝', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to reject user:', error);
+                showToast('拒绝用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 封禁用户
+        async function banUser(userId) {
+            if (!confirm('确定要封禁这个用户吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'banned' })
+                });
+                
+                showToast('用户已封禁', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to ban user:', error);
+                showToast('封禁用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 解禁用户
+        async function unbanUser(userId) {
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'approved' })
+                });
+                
+                showToast('用户已解禁', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to unban user:', error);
+                showToast('解禁用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 编辑用户
+        async function editUser(userId) {
+            showToast('用户编辑功能开发中...', 'info');
+        }
+
+        // 重置用户密码
+        async function resetPassword(userId) {
+            if (!confirm('确定要重置这个用户的密码吗？新密码将发送到用户邮箱。')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}/reset-password`, {
+                    method: 'POST'
+                });
+                
+                showToast('密码重置成功，新密码已发送到用户邮箱', 'success');
+                
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+                showToast('重置密码失败：' + error.message, 'error');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？此操作不可撤销，将同时删除用户的所有作品！')) return;
+            
+            try {
+                await apiRequest(`/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                showToast('用户删除成功', 'success');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Failed to delete user:', error);
+                showToast('删除用户失败：' + error.message, 'error');
+            }
+        }
+
+        // 加载所有作品（用于审核）
+        async function loadAllPortfolios() {
+            try {
+                const result = await apiRequest('/admin/portfolios');
+                const portfolios = result.data || [];
+                
+                renderPortfolioReviewList(portfolios);
+                
+            } catch (error) {
+                console.error('Failed to load all portfolios:', error);
+                showToast('加载作品列表失败', 'error');
+            }
+        }
+
+        // 渲染作品审核列表
+        function renderPortfolioReviewList(portfolios) {
+            const container = document.getElementById('reviewPortfoliosList');
+            
+            if (!portfolios || portfolios.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <h3>暂无作品数据</h3>
+                        <p>当前系统中没有作品需要审核</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = portfolios.map(portfolio => {
+                const statusClass = {
+                    'draft': 'status-pending',
+                    'published': 'status-approved',
+                    'rejected': 'status-rejected'
+                }[portfolio.status] || 'status-pending';
+
+                const statusText = {
+                    'draft': '草稿',
+                    'published': '已发布',
+                    'rejected': '已拒绝'
+                }[portfolio.status] || '草稿';
+
+                return `
+                    <div class="portfolio-item">
+                        <div class="portfolio-image">
+                            ${portfolio.imageUrl ? `<img src="${portfolio.imageUrl}" alt="${portfolio.title}">` : '🎨'}
+                        </div>
+                        <div class="portfolio-info">
+                            <h4 class="portfolio-title">${portfolio.title}</h4>
+                            <div class="portfolio-meta">
+                                <span>👤 ${portfolio.author}</span>
+                                <span>📅 ${new Date(portfolio.createdAt).toLocaleDateString()}</span>
+                                <span>👁️ ${portfolio.views || 0}</span>
+                                <span>❤️ ${portfolio.likes || 0}</span>
+                                <span class="portfolio-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <p style="margin: 1rem 0; color: var(--text-secondary);">${portfolio.description || '暂无描述'}</p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                ${portfolio.status === 'draft' ? `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="publishPortfolio('${portfolio.id}')">✅ 发布</button>
+                                    <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="rejectPortfolio('${portfolio.id}')">❌ 拒绝</button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="viewPortfolioDetail('${portfolio.id}')">👁️ 查看详情</button>
+                                <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="deletePortfolioAdmin('${portfolio.id}')">🗑️ 删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 发布作品
+        async function publishPortfolio(portfolioId) {
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'published' })
+                });
+                
+                showToast('作品已发布', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to publish portfolio:', error);
+                showToast('发布作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 拒绝作品
+        async function rejectPortfolio(portfolioId) {
+            if (!confirm('确定要拒绝这个作品吗？')) return;
+            
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                
+                showToast('作品已拒绝', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to reject portfolio:', error);
+                showToast('拒绝作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 管理员删除作品
+        async function deletePortfolioAdmin(portfolioId) {
+            if (!confirm('确定要删除这个作品吗？此操作不可撤销！')) return;
+            
+            try {
+                await apiRequest(`/admin/portfolios/${portfolioId}`, {
+                    method: 'DELETE'
+                });
+                
+                showToast('作品删除成功', 'success');
+                loadAllPortfolios();
+                
+            } catch (error) {
+                console.error('Failed to delete portfolio:', error);
+                showToast('删除作品失败：' + error.message, 'error');
+            }
+        }
+
+        // 查看作品详情
+        async function viewPortfolioDetail(portfolioId) {
+            showToast('作品详情查看功能开发中...', 'info');
+        }
+
+        // ===== MinIO配置管理功能 =====
+
+        let minioConfigs = [];
+        let editingMinioConfig = null;
+
+        // 加载MinIO配置列表
+        async function loadMinioConfigs() {
+            try {
+                const result = await apiRequest('/admin/minio');
+                minioConfigs = result.configs || [];
+                renderMinioConfigsList();
+            } catch (error) {
+                console.error('Failed to load minio configs:', error);
+                showToast('加载MinIO配置失败', 'error');
+            }
+        }
+
+        // 渲染MinIO配置列表
+        function renderMinioConfigsList() {
+            const container = document.getElementById('minioConfigsList');
+            
+            if (!minioConfigs || minioConfigs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📁</div>
+                        <h3 class="empty-title">暂无MinIO配置</h3>
+                        <p class="empty-description">您还没有添加任何MinIO存储配置</p>
+                        <button class="btn btn-primary" onclick="showAddMinioConfig()">
+                            <span>➕</span>
+                            <span>添加第一个配置</span>
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = minioConfigs.map(config => {
+                const statusClass = config.is_active ? 'status-approved' : 'status-pending';
+                const statusText = config.is_active ? '激活' : '未激活';
+                
+                return `
+                    <div class="user-item" style="margin-bottom: 1rem;">
+                        <div class="user-info">
+                            <div class="user-avatar-large" style="background: ${config.is_active ? 'var(--success-color)' : 'var(--text-secondary)'}">
+                                📁
+                            </div>
+                            <div class="user-details">
+                                <h4>${config.name}</h4>
+                                <p>🌐 ${config.endpoint}</p>
+                                <p>🗂️ 存储桶：${config.bucket_name}</p>
+                                <p>📝 ${config.description || '无描述'}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="user-status ${statusClass}">${statusText}</div>
+                            <div class="user-actions">
+                                ${!config.is_active ? `
+                                    <button class="btn btn-sm" style="background: var(--success-color); color: white;" onclick="activateMinioConfig(${config.id})">
+                                        <span>✅</span>
+                                        <span>激活</span>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="editMinioConfig(${config.id})">
+                                    <span>✏️</span>
+                                    <span>编辑</span>
+                                </button>
+                                <button class="btn btn-sm" style="background: var(--info-color); color: white;" onclick="testMinioConfigConnection(${config.id})">
+                                    <span>🔧</span>
+                                    <span>测试</span>
+                                </button>
+                                <button class="btn btn-sm" style="background: var(--error-color); color: white;" onclick="deleteMinioConfig(${config.id})">
+                                    <span>🗑️</span>
+                                    <span>删除</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 显示添加配置对话框
+        function showAddMinioConfig() {
+            editingMinioConfig = null;
+            document.getElementById('minioModalTitle').textContent = '添加MinIO配置';
+            document.getElementById('minioConfigForm').reset();
+            document.getElementById('minioConfigId').value = '';
+            document.getElementById('minioSecretKey').required = true;
+            document.getElementById('secretKeyHint').style.display = 'none';
+            document.getElementById('minioConfigModal').style.display = 'block';
+        }
+
+        // 编辑MinIO配置
+        async function editMinioConfig(configId) {
+            try {
+                const result = await apiRequest(`/admin/minio/${configId}`);
+                const config = result.config;
+                
+                editingMinioConfig = config;
+                document.getElementById('minioModalTitle').textContent = '编辑MinIO配置';
+                
+                // 填充表单
+                document.getElementById('minioConfigId').value = config.id;
+                document.getElementById('minioName').value = config.name;
+                document.getElementById('minioEndpoint').value = config.endpoint;
+                document.getElementById('minioAccessKey').value = config.access_key;
+                document.getElementById('minioSecretKey').value = ''; // 不显示真实密钥
+                document.getElementById('minioSecretKey').required = false; // 编辑时不强制要求
+                document.getElementById('secretKeyHint').style.display = 'block'; // 显示提示
+                document.getElementById('minioBucket').value = config.bucket_name;
+                document.getElementById('minioRegion').value = config.region || 'us-east-1';
+                document.getElementById('minioUrlExpiry').value = config.url_expiry || 3600;
+                document.getElementById('minioUseSSL').checked = config.use_ssl;
+                document.getElementById('minioIsPrivate').checked = config.is_private;
+                document.getElementById('minioIsActive').checked = config.is_active;
+                document.getElementById('minioDescription').value = config.description || '';
+                
+                document.getElementById('minioConfigModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Failed to load minio config:', error);
+                showToast('加载配置失败', 'error');
+            }
+        }
+
+        // 关闭配置对话框
+        function closeMinioModal() {
+            document.getElementById('minioConfigModal').style.display = 'none';
+            editingMinioConfig = null;
+        }
+
+        // 测试MinIO连接
+        async function testMinioConnection() {
+            const form = document.getElementById('minioConfigForm');
+            const formData = new FormData(form);
+            
+            const secretKey = formData.get('secret_key');
+            
+            // 如果是编辑模式且密钥为空，提示用户
+            if (editingMinioConfig && !secretKey) {
+                if (!confirm('当前密钥为空，将使用现有配置的密钥进行测试。继续？')) {
+                    return;
+                }
+            }
+            
+            const configData = {
+                endpoint: formData.get('endpoint'),
+                access_key: formData.get('access_key'),
+                secret_key: secretKey || (editingMinioConfig ? editingMinioConfig.secret_key : ''),
+                bucket_name: formData.get('bucket_name'),
+                use_ssl: formData.has('use_ssl'),
+                region: formData.get('region') || 'us-east-1'
+            };
+
+            // 验证必填字段
+            if (!configData.endpoint || !configData.access_key || !configData.secret_key || !configData.bucket_name) {
+                showToast('请填写所有必填字段', 'error');
+                return;
+            }
+
+            try {
+                await apiRequest('/admin/minio/test', {
+                    method: 'POST',
+                    body: JSON.stringify(configData)
+                });
+                
+                showToast('连接测试成功！', 'success');
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                showToast('连接测试失败：' + error.message, 'error');
+            }
+        }
+
+        // 测试指定配置的连接
+        async function testMinioConfigConnection(configId) {
+            try {
+                const config = minioConfigs.find(c => c.id === configId);
+                if (!config) {
+                    showToast('配置未找到', 'error');
+                    return;
+                }
+
+                // 使用专门的测试端点
+                await apiRequest(`/admin/minio/${configId}/test`, {
+                    method: 'POST'
+                });
+                
+                showToast(`配置"${config.name}"连接测试成功！`, 'success');
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                showToast('连接测试失败：' + error.message, 'error');
+            }
+        }
+
+        // 激活MinIO配置
+        async function activateMinioConfig(configId) {
+            try {
+                await apiRequest(`/admin/minio/${configId}/activate`, {
+                    method: 'POST'
+                });
+                
+                showToast('配置激活成功！', 'success');
+                loadMinioConfigs();
+            } catch (error) {
+                console.error('Failed to activate config:', error);
+                showToast('激活配置失败：' + error.message, 'error');
+            }
+        }
+
+        // 删除MinIO配置
+        async function deleteMinioConfig(configId) {
+            const config = minioConfigs.find(c => c.id === configId);
+            if (!confirm(`确定要删除配置"${config?.name || configId}"吗？此操作不可撤销。`)) {
+                return;
+            }
+
+            try {
+                await apiRequest(`/admin/minio/${configId}`, {
+                    method: 'DELETE'
+                });
+                
+                showToast('配置删除成功！', 'success');
+                loadMinioConfigs();
+            } catch (error) {
+                console.error('Failed to delete config:', error);
+                showToast('删除配置失败：' + error.message, 'error');
+            }
+        }
+
+        // 保存MinIO配置
+        async function handleMinioConfigSave(formData) {
+            try {
+                const secretKey = formData.get('secret_key');
+                const configId = formData.get('id');
+                
+                // 验证必填字段
+                if (!formData.get('name') || !formData.get('endpoint') || !formData.get('access_key') || !formData.get('bucket_name')) {
+                    showToast('请填写所有必填字段', 'error');
+                    return;
+                }
+
+                // 新建配置时必须提供密钥
+                if (!configId && !secretKey) {
+                    showToast('新建配置时必须提供秘密密钥', 'error');
+                    return;
+                }
+
+                const configData = {
+                    name: formData.get('name'),
+                    endpoint: formData.get('endpoint'),
+                    access_key: formData.get('access_key'),
+                    bucket_name: formData.get('bucket_name'),
+                    region: formData.get('region') || 'us-east-1',
+                    url_expiry: parseInt(formData.get('url_expiry')) || 3600,
+                    use_ssl: formData.has('use_ssl'),
+                    is_private: formData.has('is_private'),
+                    is_active: formData.has('is_active'),
+                    description: formData.get('description')
+                };
+
+                // 只有在提供了密钥时才包含它
+                if (secretKey) {
+                    configData.secret_key = secretKey;
+                }
+
+                let result;
+
+                if (configId && editingMinioConfig) {
+                    // 更新配置
+                    result = await apiRequest(`/admin/minio/${configId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(configData)
+                    });
+                    showToast('配置更新成功！', 'success');
+                } else {
+                    // 创建新配置
+                    result = await apiRequest('/admin/minio', {
+                        method: 'POST',
+                        body: JSON.stringify(configData)
+                    });
+                    showToast('配置创建成功！', 'success');
+                }
+
+                closeMinioModal();
+                loadMinioConfigs();
+            } catch (error) {
+                console.error('Failed to save minio config:', error);
+                showToast('保存配置失败：' + error.message, 'error');
+            }
+        }
+
+        // 编辑作品（暂时显示提示，后续可以实现编辑功能）
+        async function editPortfolio(portfolioId) {
+            try {
+                // 获取作品详情
+                const result = await apiRequest(`/portfolios/${portfolioId}`);
+                const portfolio = result.data;
+                
+                // 填充表单数据
+                document.getElementById('editPortfolioId').value = portfolio.id;
+                document.getElementById('editTitle').value = portfolio.title || '';
+                document.getElementById('editCategory').value = portfolio.category || '';
+                document.getElementById('editDescription').value = portfolio.description || '';
+                document.getElementById('editContent').value = portfolio.content || '';
+                document.getElementById('editAiLevel').value = portfolio.aiLevel || '';
+                document.getElementById('editImageUrl').value = portfolio.imageUrl || '';
+                document.getElementById('editStatus').value = portfolio.status || 'draft';
+                
+                // 处理标签（从数组转换为逗号分隔的字符串）
+                if (Array.isArray(portfolio.tags)) {
+                    document.getElementById('editTags').value = portfolio.tags.join(', ');
+                } else if (typeof portfolio.tags === 'string') {
+                    // 如果已经是字符串，可能是JSON字符串，尝试解析
+                    try {
+                        const tags = JSON.parse(portfolio.tags);
+                        document.getElementById('editTags').value = Array.isArray(tags) ? tags.join(', ') : portfolio.tags;
+                    } catch (e) {
+                        document.getElementById('editTags').value = portfolio.tags;
+                    }
+                } else {
+                    document.getElementById('editTags').value = '';
+                }
+                
+                // 显示编辑页面
+                showSection('edit-portfolio');
+                
+            } catch (error) {
+                console.error('Failed to load portfolio for editing:', error);
+                showToast('加载作品数据失败，请稍后重试', 'error');
+            }
+        }
+
+        // 显示提示信息
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = {
+                'success': 'var(--success-color)',
+                'error': 'var(--error-color)',
+                'warning': 'var(--warning-color)',
+                'info': 'var(--info-color)'
+            }[type] || 'var(--info-color)';
+            
+            toast.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 2rem;
+                background: ${bgColor};
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px var(--shadow-medium);
+                z-index: 3000;
+                animation: slideInRight 0.3s ease;
+                backdrop-filter: blur(10px);
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查认证状态
+            if (!checkAuth()) {
+                return;
+            }
+
+            // 初始化主题
+            initTheme();
+
+            // 设置导航项点击事件
+            document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.getAttribute('data-section');
+                    showSection(section);
+                });
+            });
+
+            // 创建作品表单提交
+            document.getElementById('createPortfolioForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                handleCreatePortfolio(formData);
+            });
+
+            // 个人资料表单提交
+            document.getElementById('profileForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                handleUpdateProfile(formData);
+            });
+
+            // 编辑作品表单提交
+            document.getElementById('editPortfolioForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                handleUpdatePortfolio(formData);
+            });
+
+            // MinIO配置表单提交
+            document.getElementById('minioConfigForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                handleMinioConfigSave(formData);
+            });
+
+            // 状态过滤器
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                const status = this.value;
+                const filteredPortfolios = status 
+                    ? portfolioData.filter(p => p.status === status)
+                    : portfolioData;
+                renderPortfolioList('allPortfolios', filteredPortfolios);
+            });
+
+            // 加载初始数据
+            showSection('dashboard');
+
+            // 添加动画样式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            console.log('Dashboard initialized successfully');
+        });
+
+        // 处理窗口大小变化
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
+{{end}}
