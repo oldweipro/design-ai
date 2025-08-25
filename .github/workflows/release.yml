@@ -14,6 +14,7 @@ env:
 permissions:
   contents: write
   packages: write
+  security-events: write
 
 jobs:
   # 预处理：验证和准备
