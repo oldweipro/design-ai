@@ -530,23 +530,35 @@
                             <textarea class="form-input" id="editDescription" name="description" rows="4" placeholder="描述您的作品..."></textarea>
                         </div>
 
-                        <!-- HTML内容编辑器 -->
                         <div class="form-group">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <label class="form-label" style="margin: 0;">HTML代码</label>
-                                <button type="button" id="toggleHtmlEditorEdit" class="btn btn-sm btn-secondary">
-                                    <span>📝</span> 显示HTML编辑器
+                            <label class="form-label">作品版本</label>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <select class="form-input" name="editPortfolioVersion" id="editPortfolioVersion" style="flex: 1;">
+                                    <option value="">选择或创建版本</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="showEditAddVersionDialog()">
+                                    <span>➕</span> 新版本
                                 </button>
-                                <button type="button" id="previewHtmlEdit" class="btn btn-sm btn-primary" style="display: none;">
-                                    <span>👁️</span> 预览
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEditSelectedVersion()" id="editDeleteVersionBtn" style="display: none;">
+                                    <span>🗑️</span> 删除
                                 </button>
                             </div>
-                            <div id="htmlEditorContainerEdit" style="display: none;">
-                                <textarea class="form-input" id="editHtmlContent" name="htmlContent" rows="15" placeholder="输入您的HTML代码..." style="font-family: monospace; font-size: 14px;"></textarea>
-                                <div style="margin-top: 1rem;">
-                                    <div style="border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); height: 300px; overflow: hidden;">
-                                        <iframe id="htmlPreviewEdit" style="width: 100%; height: 100%; border: none; background: white;"></iframe>
-                                    </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">HTML展示内容</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                                    <button type="button" onclick="toggleEditCodeEditor()" style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                                        <span id="editEditorToggleText">📝 显示代码编辑器</span>
+                                    </button>
+                                    <button type="button" onclick="previewEditHTML()" style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                                        👁️ 预览
+                                    </button>
+                                </div>
+                                <textarea class="form-input" name="htmlContent" id="editHtmlContentEditor" rows="12" placeholder="输入HTML代码（用于前台展示）..." style="font-family: 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 0.9rem; display: none;"></textarea>
+                                <div id="editHtmlPreview" style="border: 1px solid var(--border-color); border-radius: 8px; min-height: 300px; background: white; display: none; overflow: auto;">
+                                    <iframe id="editPreviewFrame" style="width: 100%; height: 300px; border: none;"></iframe>
                                 </div>
                             </div>
                         </div>
@@ -869,6 +881,34 @@
         
         // 版本管理功能
         let portfolioVersions = [];
+        let editPortfolioVersions = []; // 编辑页面的版本管理
+        
+        // 编辑页面添加作品版本
+        function addEditPortfolioVersion(versionName) {
+            // 检查版本名是否已存在
+            if (editPortfolioVersions.some(v => v.name === versionName)) {
+                showNotification('版本名称已存在，请使用其他名称', 'error');
+                return;
+            }
+            
+            // 添加新版本
+            const version = {
+                id: 'edit_version_' + Date.now(),
+                name: versionName,
+                htmlContent: ''
+            };
+            
+            editPortfolioVersions.push(version);
+            updateEditVersionSelect();
+            
+            // 自动选择新版本
+            const versionSelect = document.getElementById('editPortfolioVersion');
+            versionSelect.value = version.id;
+            handleEditVersionChange();
+            
+            // 显示成功通知
+            showNotification(`版本 "${versionName}" 创建成功`, 'success');
+        }
         
         // 显示通知
         function showNotification(message, type = 'info') {
@@ -941,10 +981,17 @@
             const input = document.getElementById('versionNameInput');
             const dialog = document.getElementById('addVersionDialog');
             const versionName = input.value.trim();
+            const isEditMode = dialog.dataset.editMode === 'true';
             
             if (versionName) {
                 dialog.classList.remove('show');
-                addPortfolioVersion(versionName);
+                dialog.dataset.editMode = ''; // 清除编辑模式标记
+                
+                if (isEditMode) {
+                    addEditPortfolioVersion(versionName);
+                } else {
+                    addPortfolioVersion(versionName);
+                }
             } else {
                 showNotification('请输入版本名称', 'warning');
                 input.focus();
@@ -1180,6 +1227,133 @@
             });
         }
         
+        // 编辑页面版本管理功能
+        function showEditAddVersionDialog() {
+            const dialog = document.getElementById('addVersionDialog');
+            const input = document.getElementById('versionNameInput');
+            
+            input.value = '';
+            dialog.classList.add('show');
+            
+            // 延迟聚焦，确保模态框完全显示后再聚焦
+            setTimeout(() => {
+                input.focus();
+            }, 100);
+            
+            // 标记为编辑模式
+            dialog.dataset.editMode = 'true';
+        }
+
+        function deleteEditSelectedVersion() {
+            const versionSelect = document.getElementById('editPortfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            
+            if (!selectedVersionId) {
+                return;
+            }
+            
+            const versionIndex = editPortfolioVersions.findIndex(v => v.id === selectedVersionId);
+            if (versionIndex > -1) {
+                const versionName = editPortfolioVersions[versionIndex].name;
+                showDeleteConfirmDialog(versionName, () => {
+                    editPortfolioVersions.splice(versionIndex, 1);
+                    updateEditVersionSelect();
+                    
+                    // 清空HTML内容
+                    document.getElementById('editHtmlContentEditor').value = '';
+                    
+                    // 隐藏删除按钮
+                    document.getElementById('editDeleteVersionBtn').style.display = 'none';
+                });
+            }
+        }
+
+        function updateEditVersionSelect() {
+            const versionSelect = document.getElementById('editPortfolioVersion');
+            const currentValue = versionSelect.value;
+            
+            // 清空选项
+            versionSelect.innerHTML = '<option value="">选择或创建版本</option>';
+            
+            // 添加版本选项
+            editPortfolioVersions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version.id;
+                option.textContent = version.name;
+                versionSelect.appendChild(option);
+            });
+            
+            // 尝试恢复之前选中的值
+            if (currentValue && editPortfolioVersions.some(v => v.id === currentValue)) {
+                versionSelect.value = currentValue;
+            }
+        }
+
+        function handleEditVersionChange() {
+            const versionSelect = document.getElementById('editPortfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            const deleteBtn = document.getElementById('editDeleteVersionBtn');
+            
+            if (selectedVersionId) {
+                // 显示删除按钮
+                deleteBtn.style.display = 'inline-flex';
+                
+                // 查找选中的版本
+                const selectedVersion = editPortfolioVersions.find(v => v.id === selectedVersionId);
+                if (selectedVersion) {
+                    // 加载版本HTML内容到表单
+                    document.getElementById('editHtmlContentEditor').value = selectedVersion.htmlContent || '';
+                }
+            } else {
+                // 隐藏删除按钮
+                deleteBtn.style.display = 'none';
+                
+                // 清空HTML内容
+                document.getElementById('editHtmlContentEditor').value = '';
+            }
+        }
+
+        function saveEditCurrentVersionContent() {
+            const versionSelect = document.getElementById('editPortfolioVersion');
+            const selectedVersionId = versionSelect.value;
+            
+            if (selectedVersionId) {
+                const selectedVersion = editPortfolioVersions.find(v => v.id === selectedVersionId);
+                if (selectedVersion) {
+                    selectedVersion.htmlContent = document.getElementById('editHtmlContentEditor').value;
+                }
+            }
+        }
+
+        // 编辑页面HTML编辑器功能
+        function toggleEditCodeEditor() {
+            const editor = document.getElementById('editHtmlContentEditor');
+            const toggleText = document.getElementById('editEditorToggleText');
+            const preview = document.getElementById('editHtmlPreview');
+            
+            if (editor.style.display === 'none' || editor.style.display === '') {
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+                toggleText.textContent = '📝 隐藏代码编辑器';
+            } else {
+                editor.style.display = 'none';
+                toggleText.textContent = '📝 显示代码编辑器';
+            }
+        }
+
+        function previewEditHTML() {
+            const htmlContent = document.getElementById('editHtmlContentEditor').value;
+            const preview = document.getElementById('editHtmlPreview');
+            const frame = document.getElementById('editPreviewFrame');
+            
+            if (htmlContent.trim()) {
+                frame.srcdoc = htmlContent;
+                preview.style.display = 'block';
+            } else {
+                showNotification('请先输入HTML代码', 'warning');
+            }
+        }
+
         // 初始化版本选择器事件
         document.addEventListener('DOMContentLoaded', function() {
             const versionSelect = document.getElementById('portfolioVersion');
@@ -1187,11 +1361,21 @@
                 versionSelect.addEventListener('change', handleVersionChange);
             }
             
+            const editVersionSelect = document.getElementById('editPortfolioVersion');
+            if (editVersionSelect) {
+                editVersionSelect.addEventListener('change', handleEditVersionChange);
+            }
+            
             // 监听HTML内容变化，自动保存到当前版本
             const htmlTextarea = document.getElementById('htmlContentEditor');
+            const editHtmlTextarea = document.getElementById('editHtmlContentEditor');
             
             if (htmlTextarea) {
                 htmlTextarea.addEventListener('blur', saveCurrentVersionContent);
+            }
+            
+            if (editHtmlTextarea) {
+                editHtmlTextarea.addEventListener('blur', saveEditCurrentVersionContent);
             }
         });
     </script>

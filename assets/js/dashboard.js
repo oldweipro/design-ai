@@ -421,7 +421,6 @@ class DashboardManager {
                 title: formData.get('title'),
                 author: AuthManager.getCurrentUser().username,
                 description: formData.get('description'),
-                content: formData.get('content'),
                 category: formData.get('category'),
                 tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
                 imageUrl: formData.get('imageUrl'),
@@ -429,10 +428,14 @@ class DashboardManager {
                 status: formData.get('status')
             };
 
+            // 更新作品基本信息
             await apiClient.request(`/portfolios/${portfolioId}`, {
                 method: 'PUT',
                 body: JSON.stringify(updateData)
             });
+
+            // 处理版本变更
+            await this.handleVersionChanges(portfolioId);
 
             NotificationManager.success('作品更新成功！');
             
@@ -442,6 +445,37 @@ class DashboardManager {
         } catch (error) {
             console.error('Failed to update portfolio:', error);
             NotificationManager.error('更新作品失败：' + error.message);
+        }
+    }
+
+    // 处理版本变更 - 简化版本，只更新现有版本内容
+    async handleVersionChanges(portfolioId) {
+        if (!window.editPortfolioVersions) return;
+
+        // 保存当前选中版本的内容
+        if (typeof saveEditCurrentVersionContent === 'function') {
+            saveEditCurrentVersionContent();
+        }
+
+        // 只处理现有版本的更新，新增和删除版本暂时通过其他方式处理
+        for (const version of window.editPortfolioVersions) {
+            if (version.originalVersion && version.originalVersion.id) {
+                // 更新现有版本的HTML内容
+                try {
+                    await apiClient.request(`/portfolios/${portfolioId}/versions/${version.originalVersion.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            title: version.name,
+                            description: version.originalVersion.description || '',
+                            htmlContent: version.htmlContent || '',
+                            changeLog: '编辑更新',
+                            isActive: version.originalVersion.isActive || false
+                        })
+                    });
+                } catch (error) {
+                    console.error(`Failed to update version ${version.name}:`, error);
+                }
+            }
         }
     }
 
@@ -455,20 +489,30 @@ class DashboardManager {
             
             // 填充表单数据
             this.fillEditForm(portfolio);
-            this.showSection('edit-portfolio');
             
-            // 显示版本管理部分并加载版本列表
-            const versionManagement = document.getElementById('versionManagement');
-            if (versionManagement) {
-                versionManagement.style.display = 'block';
+            // 加载版本数据到编辑页面
+            if (portfolio.versions && portfolio.versions.length > 0) {
+                // 将版本数据转换为编辑页面格式
+                editPortfolioVersions = portfolio.versions.map(v => ({
+                    id: v.id,
+                    name: v.version,
+                    htmlContent: v.htmlContent || '',
+                    originalVersion: v // 保存原始版本数据，用于后续API调用
+                }));
                 
-                // 如果后端已经返回版本数据，直接使用；否则重新获取
-                if (portfolio.versions && portfolio.versions.length > 0) {
-                    renderVersionsList(portfolio.versions);
-                } else {
-                    loadPortfolioVersions(portfolioId);
+                updateEditVersionSelect();
+                
+                // 自动选择活跃版本
+                if (portfolio.activeVersion) {
+                    const editVersionSelect = document.getElementById('editPortfolioVersion');
+                    if (editVersionSelect) {
+                        editVersionSelect.value = portfolio.activeVersion.id;
+                        handleEditVersionChange();
+                    }
                 }
             }
+            
+            this.showSection('edit-portfolio');
             
         } catch (error) {
             console.error('Failed to load portfolio for editing:', error);

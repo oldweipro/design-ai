@@ -436,7 +436,7 @@ func UpdatePortfolio(c *gin.Context) {
 			return db.Order("created_at DESC")
 		}).
 		Preload("ActiveVersion").
-		First(&portfolio, portfolio.ID)
+		First(&portfolio, "id = ?", id)
 
 	response := buildPortfolioResponse(portfolio)
 	c.JSON(http.StatusOK, gin.H{"data": response})
