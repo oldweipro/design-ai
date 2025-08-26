@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oldweipro/design-ai/database"
+	"github.com/oldweipro/design-ai/middleware"
 	"github.com/oldweipro/design-ai/models"
 	"github.com/oldweipro/design-ai/services"
 )
@@ -257,7 +258,7 @@ func TestMinIOConfigConnection(c *gin.Context) {
 // UploadFile 上传文件
 func UploadFile(c *gin.Context) {
 	// 获取用户ID
-	userID, exists := c.Get("userID")
+	userID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
@@ -284,7 +285,7 @@ func UploadFile(c *gin.Context) {
 
 	// 上传文件
 	minioService := services.NewMinIOService()
-	fileObject, err := minioService.UploadFile(file, userID.(uint), isPublic, tags)
+	fileObject, err := minioService.UploadFile(file, userID, isPublic, tags)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file", "details": err.Error()})
 		return

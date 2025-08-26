@@ -27,7 +27,7 @@ var activeConfig *models.MinIOConfig
 // MinIOService MinIO服务接口
 type MinIOService interface {
 	InitializeClient(config *models.MinIOConfig) error
-	UploadFile(file *multipart.FileHeader, userID uint, isPublic bool, tags map[string]string) (*models.FileObject, error)
+	UploadFile(file *multipart.FileHeader, userID string, isPublic bool, tags map[string]string) (*models.FileObject, error)
 	GetFileURL(objectID string) (string, error)
 	DeleteFile(objectID string) error
 	GetActiveConfig() *models.MinIOConfig
@@ -108,7 +108,7 @@ func (s *minioService) TestConnection(config *models.MinIOConfig) error {
 }
 
 // UploadFile 上传文件
-func (s *minioService) UploadFile(file *multipart.FileHeader, userID uint, isPublic bool, tags map[string]string) (*models.FileObject, error) {
+func (s *minioService) UploadFile(file *multipart.FileHeader, userID string, isPublic bool, tags map[string]string) (*models.FileObject, error) {
 	if minioClient == nil || activeConfig == nil {
 		return nil, errors.New("minio client not initialized")
 	}

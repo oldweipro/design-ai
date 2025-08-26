@@ -568,6 +568,9 @@ class MinIOManager {
 
     // 上传单个文件
     async uploadSingleFile(file, tags, isPublic) {
+        console.log('Uploading file:', file.name, 'Size:', file.size);
+        console.log('Tags:', tags, 'IsPublic:', isPublic);
+        
         const formData = new FormData();
         formData.append('file', file);
         
@@ -579,12 +582,14 @@ class MinIOManager {
             formData.append('is_public', 'true');
         }
 
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
         const result = await apiClient.request('/files/upload', {
             method: 'POST',
             body: formData,
-            headers: {
-                // 不设置Content-Type，让浏览器自动设置（包含boundary）
-            }
         });
 
         return result;

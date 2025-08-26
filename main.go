@@ -156,13 +156,13 @@ func main() {
 		// 文件管理接口
 		files := api.Group("/files")
 		{
+			// 需要认证的接口
+			files.POST("/upload", middleware.AuthMiddleware(), handlers.UploadFile)
+			files.DELETE("/:id", middleware.AuthMiddleware(), handlers.DeleteFile)
+			
 			// 公开接口
-			files.POST("/upload", middleware.OptionalAuthMiddleware(), handlers.UploadFile)
 			files.GET("/:id/url", handlers.GetFileURL)
 			files.GET("", handlers.GetFiles)
-
-			// 需要认证的接口
-			files.DELETE("/:id", middleware.AuthMiddleware(), handlers.DeleteFile)
 		}
 
 		// 管理员接口

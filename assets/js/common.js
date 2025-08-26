@@ -27,16 +27,30 @@ class ApiClient {
     // API请求封装
     async request(url, options = {}) {
         try {
+            const headers = {
+                ...this.getAuthHeaders(),
+                ...options.headers
+            };
+
+            // 如果body是FormData，不要设置Content-Type，让浏览器自动设置
+            if (!(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            // 调试信息
+            if (url.includes('/files/upload')) {
+                console.log('Upload request headers:', headers);
+                console.log('Auth token:', this.getAuthToken());
+                console.log('FormData body:', options.body instanceof FormData);
+            }
+
             const response = await fetch(this.baseURL + url, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeaders(),
-                    ...options.headers
-                },
+                headers,
                 ...options
             });
 
             if (response.status === 401) {
+                console.log('401 Unauthorized for:', url);
                 AuthManager.logout();
                 return;
             }
@@ -195,6 +209,7 @@ class ModalManager {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.style.display = 'block';
+            modal.classList.add('show');
             document.body.style.overflow = 'hidden';
             
             // 添加ESC键关闭功能
@@ -219,6 +234,7 @@ class ModalManager {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.style.display = 'none';
+            modal.classList.remove('show');
             document.body.style.overflow = '';
         }
     }

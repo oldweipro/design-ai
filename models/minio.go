@@ -38,7 +38,7 @@ type FileObject struct {
 	IsPublic     bool           `json:"is_public" gorm:"default:false"`         // 是否为公开文件
 	Tags         string         `json:"tags" gorm:"size:500"`                   // 标签(JSON格式)
 	Metadata     string         `json:"metadata" gorm:"type:text"`              // 元数据(JSON格式)
-	UploadedBy   uint           `json:"uploaded_by" gorm:"not null"`            // 上传者用户ID
+	UploadedBy   string         `json:"uploaded_by" gorm:"not null"`            // 上传者用户ID
 	User         User           `json:"user" gorm:"foreignKey:UploadedBy"`      // 上传者用户信息
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
