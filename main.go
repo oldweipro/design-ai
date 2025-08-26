@@ -130,6 +130,8 @@ func main() {
 		api.POST("/portfolios/:id/like", handlers.LikePortfolio)
 		api.GET("/categories", handlers.GetCategories)
 
+		// 不需要认证的接口
+		api.GET("/portfolios/:id/versions/:versionId", handlers.GetPortfolioVersion)
 		// 需要认证的接口
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
@@ -147,7 +149,7 @@ func main() {
 			// 作品版本管理
 			protected.POST("/portfolios/:id/versions", handlers.CreatePortfolioVersion)
 			protected.GET("/portfolios/:id/versions", handlers.GetPortfolioVersions)
-			protected.GET("/portfolios/:id/versions/:versionId", handlers.GetPortfolioVersion)
+
 			protected.PUT("/portfolios/:id/versions/:versionId", handlers.UpdatePortfolioVersion)
 			protected.DELETE("/portfolios/:id/versions/:versionId", handlers.DeletePortfolioVersion)
 			protected.POST("/portfolios/:id/versions/:versionId/activate", handlers.SetActiveVersion)
@@ -159,7 +161,7 @@ func main() {
 			// 需要认证的接口
 			files.POST("/upload", middleware.AuthMiddleware(), handlers.UploadFile)
 			files.DELETE("/:id", middleware.AuthMiddleware(), handlers.DeleteFile)
-			
+
 			// 公开接口
 			files.GET("/:id/url", handlers.GetFileURL)
 			files.GET("", handlers.GetFiles)

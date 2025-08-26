@@ -1971,8 +1971,8 @@
                                 `<button class="btn btn-primary" onclick="likePortfolio('${item.id}')" style="background: var(--ai-gradient); padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">💖 点赞</button>` :
                                 `<button class="btn btn-primary" onclick="promptLogin()" style="background: var(--ai-gradient); padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">💖 登录后点赞</button>`
                             }
-                            <button class="btn btn-secondary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📥 下载</button>
-                            <button class="btn btn-secondary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📤 分享</button>
+                            <button class="btn btn-secondary" onclick="downloadPortfolioHTML('${item.id}')" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📥 下载</button>
+                            <button class="btn btn-secondary" onclick="sharePortfolio('${item.id}')" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 25px;">📤 分享</button>
                         </div>
                     </div>
                 </div>
@@ -2217,6 +2217,249 @@
             }
         `;
     document.head.appendChild(style);
+
+    // 下载作品HTML文件
+    async function downloadPortfolioHTML(portfolioId) {
+        try {
+            // showMessage('正在准备下载...', 'info');
+
+            // 获取作品详情
+            const response = await fetch(`${API_BASE_URL}/portfolios/${portfolioId}`);
+            const result = await response.json();
+            
+            if (!result.data) {
+                // showMessage('获取作品信息失败', 'error');
+                return;
+            }
+            
+            const portfolio = result.data;
+            const htmlContent = getInitialContent(portfolio);
+            
+            if (!htmlContent || htmlContent.trim() === '') {
+                // showMessage('该作品没有可下载的HTML内容', 'warning');
+                return;
+            }
+            
+            // 创建完整的HTML文件内容
+            const fullHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${portfolio.title} - ${portfolio.author}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .description {
+            font-style: italic;
+            color: #555;
+        }
+        .content {
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">${portfolio.title}</div>
+            <div class="meta">作者: ${portfolio.author} | AI参与程度: ${portfolio.aiLevel}</div>
+            ${portfolio.description ? `<div class="description">${portfolio.description}</div>` : ''}
+        </div>
+        <div class="content">
+            ${htmlContent}
+        </div>
+        <div class="footer">
+            <p>该作品来自 DesignAI 平台 | 下载时间: ${new Date().toLocaleString('zh-CN')}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+            // 创建并下载文件
+            const blob = new Blob([fullHTML], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // 生成文件名：标题-作者-index.html
+            const fileName = `${portfolio.title.replace(/[^\w\s\u4e00-\u9fa5]/g, '')}-${portfolio.author}-index.html`;
+            link.download = fileName;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // showMessage('HTML文件下载成功！', 'success');
+            
+        } catch (error) {
+            console.error('下载失败:', error);
+            // showMessage('下载失败，请稍后重试', 'error');
+        }
+    }
+    
+    // 分享作品内容到剪贴板
+    async function sharePortfolio(portfolioId) {
+        try {
+            // 获取作品详情
+            const response = await fetch(`${API_BASE_URL}/portfolios/${portfolioId}`);
+            const result = await response.json();
+            
+            if (!result.data) {
+                showMessage('获取作品信息失败', 'error');
+                return;
+            }
+            
+            const portfolio = result.data;
+            const htmlContent = getInitialContent(portfolio);
+            const tags = Array.isArray(portfolio.tags) ? portfolio.tags.join(', ') : '';
+            
+            // 构建分享内容
+            const shareContent = `【${portfolio.title}】
+
+📝 作者: ${portfolio.author}
+🤖 AI参与程度: ${portfolio.aiLevel}
+📂 分类: ${portfolio.category}
+${portfolio.description ? `📖 描述: ${portfolio.description}` : ''}
+${tags ? `🏷️ 标签: ${tags}` : ''}
+
+💡 HTML内容:
+${htmlContent || '暂无HTML内容'}
+
+---
+来自 DesignAI 设计作品展示平台
+${window.location.origin}`;
+
+            // 尝试使用现代剪贴板API
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(shareContent);
+                showMessage('作品内容已复制到剪贴板！', 'success');
+            } else {
+                // 降级方案：使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = shareContent;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                textArea.style.top = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showMessage('作品内容已复制到剪贴板！', 'success');
+                    } else {
+                        throw new Error('复制失败');
+                    }
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    showMessage('复制失败，请手动选择和复制内容', 'error');
+                    
+                    // 显示内容让用户手动复制
+                    showShareContentDialog(shareContent);
+                }
+                
+                document.body.removeChild(textArea);
+            }
+            
+        } catch (error) {
+            console.error('分享失败:', error);
+            showMessage('分享失败，请稍后重试', 'error');
+        }
+    }
+    
+    // 显示分享内容对话框（降级方案）
+    function showShareContentDialog(content) {
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 10000;
+            max-width: 80vw;
+            max-height: 80vh;
+            overflow: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        `;
+        
+        dialog.innerHTML = `
+            <h3 style="margin-top: 0; color: #007bff;">手动复制分享内容</h3>
+            <p style="margin-bottom: 15px; color: #666;">请选择以下内容并手动复制：</p>
+            <textarea readonly style="
+                width: 100%;
+                height: 300px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 10px;
+                font-family: monospace;
+                font-size: 12px;
+                resize: vertical;
+            ">${content}</textarea>
+            <div style="margin-top: 15px; text-align: center;">
+                <button onclick="this.parentElement.parentElement.remove()" style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 8px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">关闭</button>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // 自动选择文本
+        const textarea = dialog.querySelector('textarea');
+        textarea.focus();
+        textarea.select();
+    }
 
     // 初始化页面
     document.addEventListener('DOMContentLoaded', async function() {
