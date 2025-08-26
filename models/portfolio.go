@@ -85,14 +85,26 @@ type CreatePortfolioVersionReq struct {
 }
 
 type UpdatePortfolioRequest struct {
-	Title         string   `json:"title"`
-	Description   string   `json:"description"`
-	Content       string   `json:"content"`
-	Category      string   `json:"category"`
-	Tags          []string `json:"tags"`
-	ImageObjectID string   `json:"imageObjectId"`
-	AILevel       string   `json:"aiLevel"`
-	Status        string   `json:"status"`
+	Title         string                         `json:"title"`
+	Description   string                         `json:"description"`
+	Content       string                         `json:"content"`
+	Category      string                         `json:"category"`
+	Tags          []string                       `json:"tags"`
+	ImageObjectID string                         `json:"imageObjectId"`
+	AILevel       string                         `json:"aiLevel"`
+	Status        string                         `json:"status"`
+	Versions      []UpdatePortfolioVersionReq    `json:"versions"` // 最终的版本列表
+}
+
+// UpdatePortfolioVersionReq 更新作品时的版本请求
+type UpdatePortfolioVersionReq struct {
+	ID          string `json:"id,omitempty"`                   // 版本ID，空表示新版本
+	Name        string `json:"name" binding:"required"`        // 版本名称，如 "v1.0"
+	Title       string `json:"title" binding:"required"`       // 版本标题
+	Description string `json:"description"`                    // 版本描述
+	HTMLContent string `json:"htmlContent" binding:"required"` // HTML内容
+	ChangeLog   string `json:"changeLog"`                      // 版本变更日志
+	IsActive    bool   `json:"isActive"`                       // 是否为活跃版本
 }
 
 // 管理员审核作品请求

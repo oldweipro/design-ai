@@ -291,14 +291,14 @@ func CreatePortfolio(c *gin.Context) {
 		// 创建版本
 		if len(req.Versions) > 0 {
 			var activeVersionCount int64
-			
+
 			// 统计活跃版本数量，确保只有一个活跃版本
 			for _, versionReq := range req.Versions {
 				if versionReq.IsActive {
 					activeVersionCount++
 				}
 			}
-			
+
 			// 如果没有活跃版本，默认第一个为活跃版本
 			if activeVersionCount == 0 && len(req.Versions) > 0 {
 				req.Versions[0].IsActive = true
@@ -384,49 +384,126 @@ func UpdatePortfolio(c *gin.Context) {
 		return
 	}
 
-	if req.Title != "" {
-		portfolio.Title = req.Title
-	}
-
-	// 更新作者信息：从用户信息获取最新的昵称
-	var currentUser models.User
-	if err := db.Where("id = ?", portfolio.UserID).First(&currentUser).Error; err == nil {
-		authorName := currentUser.Nickname
-		if authorName == "" {
-			authorName = currentUser.Username
+	// 使用事务处理更新操作
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 更新主表数据
+		if req.Title != "" {
+			portfolio.Title = req.Title
 		}
-		portfolio.Author = authorName
-	}
 
-	if req.Description != "" {
-		portfolio.Description = req.Description
-	}
-	// 移除Content字段更新，因为现在使用版本系统
-	if req.Category != "" {
-		portfolio.Category = req.Category
-	}
-	if len(req.Tags) > 0 {
-		tagsJSON, _ := json.Marshal(req.Tags)
-		portfolio.Tags = string(tagsJSON)
-	}
-	if req.ImageObjectID != "" {
-		portfolio.ImageObjectID = req.ImageObjectID
-	}
-	if req.AILevel != "" {
-		portfolio.AILevel = req.AILevel
-	}
-
-	// 状态更新：普通用户只能设为草稿，管理员可以设任何状态
-	if req.Status != "" {
-		if isAdmin {
-			portfolio.Status = req.Status
-		} else if req.Status == "draft" {
-			portfolio.Status = req.Status
+		// 更新作者信息：从用户信息获取最新的昵称
+		var currentUser models.User
+		if err := tx.Where("id = ?", portfolio.UserID).First(&currentUser).Error; err == nil {
+			authorName := currentUser.Nickname
+			if authorName == "" {
+				authorName = currentUser.Username
+			}
+			portfolio.Author = authorName
 		}
-	}
 
-	if err := db.Save(&portfolio).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update portfolio"})
+		if req.Description != "" {
+			portfolio.Description = req.Description
+		}
+		if req.Category != "" {
+			portfolio.Category = req.Category
+		}
+		if len(req.Tags) > 0 {
+			tagsJSON, _ := json.Marshal(req.Tags)
+			portfolio.Tags = string(tagsJSON)
+		}
+		if req.ImageObjectID != "" {
+			portfolio.ImageObjectID = req.ImageObjectID
+		}
+		if req.AILevel != "" {
+			portfolio.AILevel = req.AILevel
+		}
+
+		// 状态更新：普通用户只能设为草稿，管理员可以设任何状态
+		if req.Status != "" {
+			if isAdmin {
+				portfolio.Status = req.Status
+			} else if req.Status == "draft" {
+				portfolio.Status = req.Status
+			}
+		}
+
+		// 保存主表更新
+		if err := tx.Save(&portfolio).Error; err != nil {
+			return err
+		}
+
+		// 处理版本数据：先删除旧的版本记录，再插入新的版本列表
+		if len(req.Versions) > 0 {
+			// 1. 删除所有旧的版本记录
+			if err := tx.Where("portfolio_id = ?", id).Delete(&models.PortfolioVersion{}).Error; err != nil {
+				return err
+			}
+
+			// 2. 确保只有一个活跃版本
+			var activeVersionCount int
+			for _, versionReq := range req.Versions {
+				if versionReq.IsActive {
+					activeVersionCount++
+				}
+			}
+
+			// 如果没有活跃版本，默认第一个为活跃版本
+			if activeVersionCount == 0 && len(req.Versions) > 0 {
+				req.Versions[0].IsActive = true
+			} else if activeVersionCount > 1 {
+				// 如果有多个活跃版本，只保留第一个
+				foundActive := false
+				for i := range req.Versions {
+					if req.Versions[i].IsActive {
+						if foundActive {
+							req.Versions[i].IsActive = false
+						} else {
+							foundActive = true
+						}
+					}
+				}
+			}
+
+			// 3. 插入新的版本列表
+			for _, versionReq := range req.Versions {
+				// 生成缩略图
+				thumbnail := ""
+				if versionReq.HTMLContent != "" {
+					thumbnail = services.ThumbnailSvc.GenerateHTMLThumbnail(versionReq.HTMLContent)
+				}
+
+				// 对于现有版本，如果ID为空或者不是有效的UUID，生成新的版本号
+				versionNumber := versionReq.Name
+				if versionReq.ID == "" || len(versionReq.ID) < 36 {
+					// 这是一个新版本，生成版本号
+					nextVersion, err := getNextVersionNumber(tx, id)
+					if err == nil && nextVersion != "" {
+						versionNumber = nextVersion
+					}
+				}
+
+				version := models.PortfolioVersion{
+					PortfolioID: id,
+					Version:     versionNumber,
+					Title:       versionReq.Title,
+					Description: versionReq.Description,
+					HTMLContent: versionReq.HTMLContent,
+					Thumbnail:   thumbnail,
+					IsActive:    versionReq.IsActive,
+					ChangeLog:   versionReq.ChangeLog,
+				}
+
+				if err := tx.Create(&version).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update portfolio", "details": err.Error()})
 		return
 	}
 

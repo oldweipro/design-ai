@@ -61,16 +61,6 @@ class DashboardManager {
     }
 
     bindFormEvents() {
-        // 创建作品表单
-        const createForm = document.getElementById('createPortfolioForm');
-        if (createForm) {
-            createForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formData = new FormData(createForm);
-                this.handleCreatePortfolio(formData);
-            });
-        }
-
         // 编辑作品表单
         const editForm = document.getElementById('editPortfolioForm');
         if (editForm) {
@@ -382,60 +372,32 @@ class DashboardManager {
         }
     }
 
-    // 表单处理方法
-    async handleCreatePortfolio(formData) {
-        try {
-            const portfolioData = {
-                title: formData.get('title'),
-                author: AuthManager.getCurrentUser().username,
-                description: formData.get('description'),
-                content: formData.get('content'),
-                category: formData.get('category'),
-                tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
-                imageUrl: formData.get('imageUrl'),
-                aiLevel: formData.get('aiLevel'),
-                status: 'draft' // 默认草稿状态
-            };
-
-            await apiClient.request('/portfolios', {
-                method: 'POST',
-                body: JSON.stringify(portfolioData)
-            });
-
-            NotificationManager.success('作品创建成功！');
-            document.getElementById('createPortfolioForm').reset();
-            
-            await this.loadMyPortfolios();
-            this.showSection('my-portfolios');
-
-        } catch (error) {
-            console.error('Failed to create portfolio:', error);
-            NotificationManager.error('创建作品失败：' + error.message);
-        }
-    }
-
     async handleUpdatePortfolio(formData) {
         try {
             const portfolioId = formData.get('id');
+            
+            // 保存当前选中版本的内容
+            if (typeof saveEditCurrentVersionContent === 'function') {
+                saveEditCurrentVersionContent();
+            }
+            
             const updateData = {
                 title: formData.get('title'),
                 author: AuthManager.getCurrentUser().username,
                 description: formData.get('description'),
                 category: formData.get('category'),
                 tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
-                imageUrl: formData.get('imageUrl'),
+                imageObjectId: formData.get('imageObjectId'), // 修正字段名
                 aiLevel: formData.get('aiLevel'),
-                status: formData.get('status')
+                status: formData.get('status'),
+                versions: versions // 添加版本信息
             };
 
-            // 更新作品基本信息
+            // 更新作品信息（包含版本）
             await apiClient.request(`/portfolios/${portfolioId}`, {
                 method: 'PUT',
                 body: JSON.stringify(updateData)
             });
-
-            // 处理版本变更
-            await this.handleVersionChanges(portfolioId);
 
             NotificationManager.success('作品更新成功！');
             
@@ -448,36 +410,6 @@ class DashboardManager {
         }
     }
 
-    // 处理版本变更 - 简化版本，只更新现有版本内容
-    async handleVersionChanges(portfolioId) {
-        if (!window.editPortfolioVersions) return;
-
-        // 保存当前选中版本的内容
-        if (typeof saveEditCurrentVersionContent === 'function') {
-            saveEditCurrentVersionContent();
-        }
-
-        // 只处理现有版本的更新，新增和删除版本暂时通过其他方式处理
-        for (const version of window.editPortfolioVersions) {
-            if (version.originalVersion && version.originalVersion.id) {
-                // 更新现有版本的HTML内容
-                try {
-                    await apiClient.request(`/portfolios/${portfolioId}/versions/${version.originalVersion.id}`, {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            title: version.name,
-                            description: version.originalVersion.description || '',
-                            htmlContent: version.htmlContent || '',
-                            changeLog: '编辑更新',
-                            isActive: version.originalVersion.isActive || false
-                        })
-                    });
-                } catch (error) {
-                    console.error(`Failed to update version ${version.name}:`, error);
-                }
-            }
-        }
-    }
 
     async editPortfolio(portfolioId) {
         try {
@@ -495,7 +427,7 @@ class DashboardManager {
                 // 将版本数据转换为编辑页面格式
                 editPortfolioVersions = portfolio.versions.map(v => ({
                     id: v.id,
-                    name: v.version,
+                    name: v.title,
                     htmlContent: v.htmlContent || '',
                     originalVersion: v // 保存原始版本数据，用于后续API调用
                 }));

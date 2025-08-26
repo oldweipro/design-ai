@@ -594,7 +594,7 @@
 
                         <div style="margin-top: 3rem; display: flex; gap: 1rem;">
                             <button type="button" class="btn btn-secondary" onclick="dashboardManager.showSection('my-portfolios')">取消</button>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" onclick="handleEditPortfolio(event)">
                                 <span>💾</span>
                                 <span>更新作品</span>
                             </button>
@@ -1151,6 +1151,7 @@
         
         // 处理创建作品表单提交
         function handleCreatePortfolio(event) {
+            console.log(1111111)
             event.preventDefault();
             
             const form = document.getElementById('createPortfolioForm');
@@ -1224,6 +1225,85 @@
             .catch(error => {
                 console.error('创建作品失败:', error);
                 showNotification('创建作品失败，请稍后重试', 'error');
+            });
+        }
+
+        // 处理更新作品表单提交
+        function handleEditPortfolio(event) {
+            event.preventDefault();
+
+            const editForm = document.getElementById('editPortfolioForm');
+            const formData = new FormData(editForm);
+            const portfolioId = formData.get('id');
+            // 收集基本作品信息
+            const portfolioData = {
+                title: formData.get('title'),
+                author: AuthManager.getCurrentUser().username,
+                description: formData.get('description'),
+                category: formData.get('category'),
+                imageUrl: formData.get('imageUrl'),
+                aiLevel: formData.get('aiLevel'),
+                tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
+                status: formData.get('status'),
+            };
+
+            // 收集版本信息
+            const versions = [];
+            editPortfolioVersions.forEach((version, index) => {
+                versions.push({
+                    name: version.name,
+                    title: version.name, // 使用版本名作为标题
+                    description: '',
+                    htmlContent: version.htmlContent || '<p>请添加HTML内容</p>',
+                    changeLog: index === 0 ? '初始版本' : '版本更新',
+                    isActive: index === 0 // 第一个版本为活跃版本
+                });
+            });
+
+            // 如果没有版本，创建默认版本
+            if (versions.length === 0) {
+                const htmlContent = document.getElementById('editHtmlContentEditor').value;
+                if (htmlContent.trim()) {
+                    versions.push({
+                        name: 'v1.0',
+                        title: 'v1.0',
+                        description: '默认版本',
+                        htmlContent: htmlContent,
+                        changeLog: '初始版本',
+                        isActive: true
+                    });
+                }
+            }
+
+            portfolioData.versions = versions;
+
+            // 发送请求
+            showNotification('正在更新作品...', 'info');
+
+            apiClient.request(`/portfolios/${portfolioId}`, {
+                method: 'PUT',
+                body: JSON.stringify(portfolioData)
+            })
+            .then(result => {
+                if (result && !result.error) {
+                    showNotification('作品更新成功！', 'success');
+
+                    // 清空表单和版本数据
+                    editForm.reset();
+                    editPortfolioVersions = [];
+                    updateVersionSelect();
+
+                    // 跳转到我的作品页面
+                    setTimeout(() => {
+                        dashboardManager.showSection('my-portfolios');
+                    }, 1500);
+                } else {
+                    showNotification(`更新作品失败: ${result?.error || '未知错误'}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('更新作品失败:', error);
+                showNotification('更新作品失败，请稍后重试', 'error');
             });
         }
         
