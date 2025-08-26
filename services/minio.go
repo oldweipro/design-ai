@@ -152,7 +152,7 @@ func (s *minioService) UploadFile(file *multipart.FileHeader, userID string, isP
 	for k, v := range tags {
 		uploadOptions.UserMetadata[k] = v
 	}
-	uploadOptions.UserMetadata["uploaded-by"] = fmt.Sprintf("%d", userID)
+	uploadOptions.UserMetadata["uploaded-by"] = fmt.Sprintf("%s", userID)
 	uploadOptions.UserMetadata["original-name"] = file.Filename
 
 	// 上传文件
