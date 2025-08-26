@@ -1940,6 +1940,11 @@
                                 <div style="font-size: 0.85rem; color: var(--text-secondary);">by ${item.author} • ${item.aiLevel}</div>
                                 ${item.description ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; opacity: 0.8;">${item.description}</div>` : ''}
                             </div>
+                            <div style="margin-left: auto; margin-right: 2rem;">
+                                <select id="versionSelect_${item.id}" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-primary); font-size: 0.85rem; cursor: pointer;" onchange="switchVersion(this.value, '${item.id}')">
+                                    ${generateVersionOptions(item)}
+                                </select>
+                            </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
                             <span>👁️ ${item.views || 0}</span>
@@ -1951,7 +1956,7 @@
                     <div style="flex: 1; width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow-medium); min-height: 0;">
                         <iframe id="previewContent" 
                             style="width: 100%; height: 100%; border: none; background: var(--bg-secondary); display: block;"
-                            src="data:text/html;charset=utf-8,${encodeURIComponent(item.content)}">
+                            src="data:text/html;charset=utf-8,${encodeURIComponent(getInitialContent(item))}">
                         </iframe>
                     </div>
                     
@@ -1977,6 +1982,154 @@
 
     function closeDetailModal() {
         document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // 生成版本选项
+    function generateVersionOptions(portfolio) {
+        console.log(portfolio)
+        let options = '';
+        
+        if (!portfolio.versions || portfolio.versions.length === 0) {
+            // 如果没有版本，显示默认内容
+            options = '<option value="default">默认版本</option>';
+        } else {
+            // 生成版本选项
+            portfolio.versions.forEach(version => {
+                const isActive = version.isActive || (portfolio.activeVersion && portfolio.activeVersion.id === version.id);
+                const selectedAttr = isActive ? ' selected' : '';
+                options += `<option value="${version.id}"${selectedAttr}>${version.version || version.title}</option>`;
+            });
+        }
+        
+        return options;
+    }
+
+    // 获取初始内容（优先显示活跃版本）
+    function getInitialContent(portfolio) {
+        // 优先使用活跃版本的内容
+        if (portfolio.activeVersion && portfolio.activeVersion.htmlContent) {
+            return portfolio.activeVersion.htmlContent;
+        }
+        
+        // 其次尝试使用第一个版本的内容
+        if (portfolio.versions && portfolio.versions.length > 0) {
+            const firstVersion = portfolio.versions.find(v => v.htmlContent);
+            if (firstVersion && firstVersion.htmlContent) {
+                return firstVersion.htmlContent;
+            }
+        }
+        
+        // 最后使用作品的默认content
+        if (portfolio.content) {
+            return portfolio.content;
+        }
+        
+        // 如果都没有，返回默认内容
+        return getDefaultVersionContent('default', portfolio.id);
+    }
+
+    // 版本切换功能
+    async function switchVersion(versionId, portfolioId) {
+        console.log(`Switching to version: ${versionId} for portfolio: ${portfolioId}`);
+        
+        const iframe = document.getElementById('previewContent');
+        if (!iframe) return;
+        
+        // 显示加载状态
+        iframe.style.opacity = '0.5';
+        
+        try {
+            // 如果是默认版本，使用作品的content
+            if (versionId === 'default') {
+                const portfolio = portfolioData.find(p => p.id === portfolioId);
+                if (portfolio && portfolio.content) {
+                    iframe.src = `data:text/html;charset=utf-8,${encodeURIComponent(portfolio.content)}`;
+                    iframe.style.opacity = '1';
+                    showSuccessMessage('已切换到默认版本');
+                    return;
+                }
+            }
+            
+            // 调用API获取版本内容
+            const response = await apiRequest(`/portfolios/${portfolioId}/versions/${versionId}`);
+            
+            if (response && response.data) {
+                const version = response.data;
+                const htmlContent = version.htmlContent || '<p>该版本暂无内容</p>';
+                
+                iframe.src = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+                iframe.style.opacity = '1';
+                showSuccessMessage(`已切换到版本 ${version.version || version.title}`);
+            } else {
+                throw new Error('版本数据获取失败');
+            }
+        } catch (error) {
+            console.error('Failed to switch version:', error);
+            // 回退到默认内容
+            const defaultContent = getDefaultVersionContent(versionId, portfolioId);
+            iframe.src = `data:text/html;charset=utf-8,${encodeURIComponent(defaultContent)}`;
+            iframe.style.opacity = '1';
+            showErrorMessage('版本切换失败，已显示默认内容');
+        }
+    }
+
+    // 获取默认版本内容（作为回退方案）
+    function getDefaultVersionContent(versionId, portfolioId) {
+        const portfolio = portfolioData.find(p => p.id === portfolioId);
+        const portfolioTitle = portfolio ? portfolio.title : '未知作品';
+        
+        return `
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { 
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                        margin: 0; 
+                        padding: 2rem; 
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        text-align: center;
+                    }
+                    .version-badge {
+                        background: rgba(255, 255, 255, 0.2);
+                        padding: 0.5rem 1rem;
+                        border-radius: 25px;
+                        margin-bottom: 2rem;
+                        font-size: 0.9rem;
+                        backdrop-filter: blur(10px);
+                    }
+                    .demo-content {
+                        max-width: 600px;
+                        line-height: 1.6;
+                    }
+                    .portfolio-title {
+                        font-size: 2rem;
+                        margin-bottom: 1rem;
+                        font-weight: 600;
+                    }
+                    .info-text {
+                        opacity: 0.8;
+                        margin-bottom: 0.5rem;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="version-badge">版本预览</div>
+                <h1 class="portfolio-title">${portfolioTitle}</h1>
+                <div class="demo-content">
+                    <p class="info-text">版本内容加载中...</p>
+                    <p class="info-text">如果问题持续，请联系作者或刷新页面。</p>
+                </div>
+            </body>
+            </html>
+        `;
     }
 
 
